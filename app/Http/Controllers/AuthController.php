@@ -17,7 +17,21 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended('/dashboard');
+            $user = Auth::user();
+            // Redirigir según el rol
+            switch ($user->rol) {
+                case 'monitor':
+                    return redirect()->intended('/dashboardMonitor');
+                case 'editor':
+                    return redirect()->intended('/dashboardEditor');
+                case 'administrador':
+                    return redirect()->intended('/dashboardAdministrador');
+                default:
+                    Auth::logout();
+                    return back()->withErrors([
+                        'email' => 'Rol de usuario no autorizado.'
+                    ]);
+            }
         }
 
         return back()->withErrors([
