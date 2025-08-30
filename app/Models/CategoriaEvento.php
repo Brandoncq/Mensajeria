@@ -8,7 +8,7 @@ class CategoriaEvento extends Model
 {
     use HasFactory;
 
-    protected $table = 'categoria_evento';
+    protected $table = 'categorias_evento';
     protected $primaryKey = 'id_categoria';
 
     protected $fillable = [
