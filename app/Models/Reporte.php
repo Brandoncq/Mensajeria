@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\CategoriaEvento;
 
 class Reporte extends Model
 {
@@ -32,7 +33,15 @@ class Reporte extends Model
         'fecha_aprobacion',
         'id_administrador_aprobador',
     ];
-
+    public function categoria()
+    {
+        return $this->belongsTo(CategoriaEvento::class, 'id_categoria', 'id_categoria');
+    }
     public $timestamps = false; // Si no tienes created_at y updated_at
+
+    public function archivos()
+    {
+        return $this->hasMany(\App\Models\Archivo::class, 'id_reporte');
+    }
 
 }
