@@ -137,8 +137,16 @@
                 <textarea name="descripcion" class="form-control" rows="3" required></textarea>
             </div>
             <div class="form-group mb-3">
-                <label>Actores identificados (nombres, roles, vínculo)</label>
-                <textarea name="actores_identificados" class="form-control" rows="3"></textarea>
+                <label>Actores identificados (nombres, roles, vínculo):</label>
+                <div id="actores-container">
+                    <div class="d-flex align-items-center mb-2">
+                        <input type="text" name="actores_identificados[]" class="form-control me-2" placeholder="Nombre">
+                        <input type="text" name="actores_roles[]" class="form-control me-2" placeholder="Rol">
+                        <input type="text" name="actores_vinculos[]" class="form-control me-2" placeholder="Vínculo">
+                        <button type="button" class="btn btn-danger remove-actor-btn">Eliminar</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary mt-2" id="addActorButton">Añadir otro actor</button>
             </div>
             <div class="form-group mb-3">
                 <label>Tema tratado</label>
@@ -154,12 +162,25 @@
             </div>
             <div class="form-group mb-3">
                 <label>Adjuntar imágenes (máx. 5):</label>
-                <input type="file" name="imagenes[]" accept="image/*" multiple class="form-control" id="imagenes" capture="environment">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-secondary" id="cameraButton">Abrir cámara</button>
+                    <button type="button" class="btn btn-secondary" id="fileButton">Añadir desde archivos</button>
+                </div>
+                <input type="file" name="imagenes[]" accept="image/*" id="cameraInput" capture="environment" class="d-none">
+                <input type="file" name="imagenes[]" accept="image/*" id="fileInput" class="d-none" multiple>
                 <div class="image-preview" id="image-preview"></div>
+                <small class="text-muted">Máximo 5 imágenes.</small>
             </div>
             <div class="form-group mb-3">
                 <label>Enlace (URL):</label>
-                <input type="url" name="enlace" class="form-control">
+                <div id="url-container">
+                    <div class="d-flex align-items-center mb-2">
+                        <input type="url" name="enlace[]" class="form-control" placeholder="Añadir enlace">
+                        <button type="button" class="btn btn-danger ms-2 remove-url-btn">Eliminar</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary mt-2" id="addUrlButton">Añadir otro enlace</button>
+                <small class="text-muted">Máximo 5 enlaces.</small>
             </div>
             <div id="bloqueos-fields" style="display: none;">
                 <div class="form-group mb-3">
@@ -189,26 +210,103 @@
             }
         });
 
-        // Vista previa de imágenes
-        document.getElementById('imagenes').addEventListener('change', function(event) {
-            const previewContainer = document.getElementById('image-preview');
-            previewContainer.innerHTML = ''; // Limpiar vista previa
-            const files = event.target.files;
+        // Botones para añadir imágenes
+        const cameraButton = document.getElementById('cameraButton');
+        const fileButton = document.getElementById('fileButton');
+        const cameraInput = document.getElementById('cameraInput');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('image-preview');
 
-            if (files.length > 5) {
-                alert('Solo puedes subir hasta 5 imágenes.');
-                event.target.value = ''; // Limpiar selección
+        cameraButton.addEventListener('click', () => cameraInput.click());
+        fileButton.addEventListener('click', () => fileInput.click());
+
+        cameraInput.addEventListener('change', handleImageUpload);
+        fileInput.addEventListener('change', handleImageUpload);
+
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            if (imagePreview.children.length + files.length > 5) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Límite alcanzado',
+                    text: 'Solo puedes subir hasta 5 imágenes.',
+                    confirmButtonColor: '#d33',
+                });
                 return;
             }
-
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    previewContainer.appendChild(img);
+                    const imgContainer = document.createElement('div');
+                    imgContainer.classList.add('position-relative', 'me-2');
+                    imgContainer.innerHTML = `
+                        <img src="${e.target.result}" class="rounded" style="width: 80px; height: 80px; object-fit: cover;">
+                        <button type="button" class="btn-close position-absolute top-0 start-100 translate-middle" aria-label="Close"></button>
+                    `;
+                    imagePreview.appendChild(imgContainer);
+
+                    // Botón para eliminar la imagen
+                    imgContainer.querySelector('.btn-close').addEventListener('click', () => {
+                        imgContainer.remove();
+                    });
                 };
                 reader.readAsDataURL(file);
+            });
+        }
+
+        // Botón para añadir más URLs
+        const addUrlButton = document.getElementById('addUrlButton');
+        const urlContainer = document.getElementById('url-container');
+
+        addUrlButton.addEventListener('click', () => {
+            if (urlContainer.children.length >= 5) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Límite alcanzado',
+                    text: 'Solo puedes añadir hasta 5 enlaces.',
+                    confirmButtonColor: '#d33',
+                });
+                return;
+            }
+            const urlGroup = document.createElement('div');
+            urlGroup.classList.add('d-flex', 'align-items-center', 'mb-2');
+            urlGroup.innerHTML = `
+                <input type="url" name="enlace[]" class="form-control" placeholder="Añadir enlace">
+                <button type="button" class="btn btn-danger ms-2 remove-url-btn">Eliminar</button>
+            `;
+            urlContainer.appendChild(urlGroup);
+
+            // Añadir evento para eliminar el enlace
+            urlGroup.querySelector('.remove-url-btn').addEventListener('click', () => {
+                urlGroup.remove();
+            });
+        });
+
+        // Añadir evento para eliminar enlaces existentes
+        document.querySelectorAll('.remove-url-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.target.closest('.d-flex').remove();
+            });
+        });
+
+        // Botón para añadir más actores
+        const addActorButton = document.getElementById('addActorButton');
+        const actoresContainer = document.getElementById('actores-container');
+
+        addActorButton.addEventListener('click', () => {
+            const actorGroup = document.createElement('div');
+            actorGroup.classList.add('d-flex', 'align-items-center', 'mb-2');
+            actorGroup.innerHTML = `
+                <input type="text" name="actores_identificados[]" class="form-control me-2" placeholder="Nombre">
+                <input type="text" name="actores_roles[]" class="form-control me-2" placeholder="Rol">
+                <input type="text" name="actores_vinculos[]" class="form-control me-2" placeholder="Vínculo">
+                <button type="button" class="btn btn-danger remove-actor-btn">Eliminar</button>
+            `;
+            actoresContainer.appendChild(actorGroup);
+
+            // Botón para eliminar el actor
+            actorGroup.querySelector('.remove-actor-btn').addEventListener('click', () => {
+                actorGroup.remove();
             });
         });
 
