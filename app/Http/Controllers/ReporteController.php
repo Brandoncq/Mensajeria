@@ -11,65 +11,68 @@ class ReporteController extends Controller
 {
     public function store(Request $request)
     {
-        // Validar campos según tus requerimientos
-        $validated = $request->validate([
-            'id_categoria' => 'required|integer',
-            'fecha_evento' => 'required|date',
-            'lugar' => 'required|string|max:255',
-            'descripcion' => 'required|string',
-            // ...otros campos según el formulario...
-        ]);
-
-        // Validaciones específicas para la categoría F
-        if ($request->id_categoria == 6) {
-            $request->validate([
-                'numero_personas' => 'required|integer|min:1',
-                'presencia_autoridades' => 'required|string',
-                'intervencion_serenazgo' => 'required|string',
+        try {
+            // Validar campos según tus requerimientos
+            $validated = $request->validate([
+                'id_categoria' => 'required|integer',
+                'fecha_evento' => 'required|date',
+                'lugar' => 'required|string|max:255',
+                'descripcion' => 'required|string',
+                // ...otros campos según el formulario...
             ]);
-        }
 
-        $validated['id_monitor'] = Auth::id(); // Asigna el monitor autenticado
-        $validated['fecha_sistema'] = now()->setTimezone('America/Lima'); // Fecha del sistema en hora de Perú
-        $validated['fecha_evento'] = \Carbon\Carbon::parse($request->fecha_evento)->setTimezone('America/Lima'); // Fecha del evento en hora de Perú
-
-        $reporte = Reporte::create($validated);
-
-        // Guardar imágenes con nombres únicos
-        if ($request->hasFile('imagenes')) {
-            foreach ($request->file('imagenes') as $imagen) {
-                // Generar un nombre único para el archivo
-                $uniqueName = uniqid('img_', true) . '.' . $imagen->getClientOriginalExtension();
-
-                // Guardar el archivo en el almacenamiento
-                $path = $imagen->storeAs('reportes', $uniqueName, 'public');
-
-                // Guardar en la base de datos
-                Archivo::create([
-                    'id_reporte' => $reporte->id_reporte,
-                    'tipo' => 'imagen',
-                    'url' => $path,
-                    'nombre_archivo' => $uniqueName, // Guardar el nombre único generado
+            // Validaciones específicas para la categoría F
+            if ($request->id_categoria == 6) {
+                $request->validate([
+                    'numero_personas' => 'required|integer|min:1',
+                    'presencia_autoridades' => 'required|string',
+                    'intervencion_serenazgo' => 'required|string',
                 ]);
             }
+
+            $validated['id_monitor'] = Auth::id(); // Asigna el monitor autenticado
+            $validated['fecha_sistema'] = now()->setTimezone('America/Lima'); // Fecha del sistema en hora de Perú
+            $validated['fecha_evento'] = \Carbon\Carbon::parse($request->fecha_evento)->setTimezone('America/Lima'); // Fecha del evento en hora de Perú
+
+            $reporte = Reporte::create($validated);
+
+            // Guardar imágenes con nombres únicos
+            if ($request->hasFile('imagenes')) {
+                foreach ($request->file('imagenes') as $imagen) {
+                    // Generar un nombre único para el archivo
+                    $uniqueName = uniqid('img_', true) . '.' . $imagen->getClientOriginalExtension();
+
+                    // Guardar el archivo en el almacenamiento
+                    $path = $imagen->storeAs('reportes', $uniqueName, 'public');
+
+                    // Guardar en la base de datos
+                    Archivo::create([
+                        'id_reporte' => $reporte->id_reporte,
+                        'tipo' => 'imagen',
+                        'url' => $path,
+                        'nombre_archivo' => $uniqueName, // Guardar el nombre único generado
+                    ]);
+                }
+            }
+
+            // Guardar enlace
+            if ($request->filled('enlace')) {
+                Archivo::create([
+                    'id_reporte' => $reporte->id_reporte,
+                    'tipo' => 'enlace',
+                    'url' => $request->enlace,
+                    'nombre_archivo' => null,
+                ]);
+            }
+
+            $this->notificarAdministradores('Se ha enviado un nuevo reporte.');
+
+            // Redirigir con mensaje de éxito
+            return redirect()->back()->with('success', 'Reporte enviado correctamente.');
+        } catch (\Exception $e) {
+            // Redirigir con mensaje de error
+            return redirect()->back()->with('error', 'Hubo un error al enviar el reporte. Inténtalo nuevamente.');
         }
-
-        // Guardar enlace
-        if ($request->filled('enlace')) {
-            Archivo::create([
-                'id_reporte' => $reporte->id_reporte,
-                'tipo' => 'enlace',
-                'url' => $request->enlace,
-                'nombre_archivo' => null,
-            ]);
-        }
-
-        $this->notificarAdministradores('Se ha enviado un nuevo reporte.');
-
-        // Retornar la vista del monitor con mensaje de éxito
-        return view('dashboard.monitor', [
-            'success' => 'Reporte enviado correctamente.'
-        ]);
     }
 
     public function notificarAdministradores($mensaje)

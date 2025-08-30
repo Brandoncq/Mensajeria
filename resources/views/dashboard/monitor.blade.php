@@ -3,42 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
             min-height: 100vh;
             margin: 0;
             font-family: 'Nunito', sans-serif;
             background: #f7f7f7;
+            padding: 0;
         }
         .login-header {
             width: 100%;
             background: #c0392b;
             color: #fff;
-            padding: 12px 0;
+            padding: 10px 0;
             text-align: center;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 600;
             letter-spacing: 1px;
         }
         .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
+            max-width: 100%;
+            padding: 15px;
+            margin: 0 auto;
             background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.2);
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
         .form-group label {
             font-weight: 600;
             color: #333;
+            font-size: 14px;
+        }
+        .form-control {
+            font-size: 14px;
+            padding: 8px;
         }
         .btn-primary {
             background: #c0392b;
             border: none;
             font-weight: 600;
             transition: background 0.3s;
+            font-size: 14px;
+            padding: 10px;
         }
         .btn-primary:hover {
             background: #a93226;
@@ -53,14 +63,27 @@
             margin-top: 10px;
         }
         .image-preview img {
-            width: 100px;
-            height: 100px;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         input[type="file"]::file-selector-button {
             display: none; /* Oculta el botón predeterminado */
+        }
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+                box-shadow: none;
+            }
+            .form-group {
+                margin-bottom: 15px;
+            }
+            .btn-primary {
+                font-size: 13px;
+                padding: 8px;
+            }
         }
     </style>
 </head>
@@ -69,7 +92,7 @@
         Grupo Desarrollo y Comunicacion S.A.C
     </div>
     <div class="container">
-        <h2 class="text-center mb-4">Nuevo Reporte</h2>
+        <h2 class="text-center mb-4" style="font-size: 18px;">Nuevo Reporte</h2>
 
         @if (session('success'))
             <div class="alert alert-success">
@@ -111,23 +134,23 @@
             </div>
             <div class="form-group mb-3">
                 <label>Descripción del hecho</label>
-                <textarea name="descripcion" class="form-control" rows="4" required></textarea>
+                <textarea name="descripcion" class="form-control" rows="3" required></textarea>
             </div>
             <div class="form-group mb-3">
                 <label>Actores identificados (nombres, roles, vínculo)</label>
-                <textarea name="actores_identificados" class="form-control" rows="4"></textarea>
+                <textarea name="actores_identificados" class="form-control" rows="3"></textarea>
             </div>
             <div class="form-group mb-3">
                 <label>Tema tratado</label>
-                <textarea name="tema_tratado" class="form-control" rows="4"></textarea>
+                <textarea name="tema_tratado" class="form-control" rows="3"></textarea>
             </div>
             <div class="form-group mb-3">
                 <label>Acuerdos o compromisos asumidos (si los hubiera)</label>
-                <textarea name="acuerdos_compromisos" class="form-control" rows="4"></textarea>
+                <textarea name="acuerdos_compromisos" class="form-control" rows="3"></textarea>
             </div>
             <div class="form-group mb-3">
                 <label>Recomendación preliminar</label>
-                <textarea name="recomendacion_preliminar" class="form-control" rows="4"></textarea>
+                <textarea name="recomendacion_preliminar" class="form-control" rows="3"></textarea>
             </div>
             <div class="form-group mb-3">
                 <label>Adjuntar imágenes (máx. 5):</label>
@@ -188,6 +211,26 @@
                 reader.readAsDataURL(file);
             });
         });
+
+        @if (session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: '{{ session('success') }}',
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'Aceptar'
+            });
+        @endif
+
+        @if (session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: '¡Error!',
+                text: '{{ session('error') }}',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Aceptar'
+            });
+        @endif
     </script>
 </body>
 </html>

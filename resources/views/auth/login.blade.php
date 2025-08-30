@@ -4,17 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <title>Iniciar Sesión</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
     <style>
         body {
             min-height: 100vh;
             margin: 0;
             font-family: 'Nunito', sans-serif;
-            background: #fff url('{{ asset('img/bg-login-decsac.png') }}') repeat center center;
-            background-size: contain;
+            background: #fff url('{{ asset('img/bg-login-decsac.png') }}') no-repeat center center fixed;
+            background-size: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         .login-header {
-            width: 100vw;
+            width: 100%;
             background: #c0392b;
             color: #fff;
             padding: 12px 0;
@@ -22,37 +26,34 @@
             font-size: 20px;
             font-weight: 600;
             letter-spacing: 1px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
         }
         .login-container {
-            min-height: calc(100vh - 48px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-card {
-            background: #bdbdbd;
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 12px;
-            box-shadow: 0 8px 32px 0 rgba(31,38,135,0.2);
-            padding: 40px 32px 32px 32px;
-            width: 350px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            margin: 80px 20px 20px 20px;
         }
         .logo-circle {
             background: #fff;
             border-radius: 50%;
-            width: 110px;
-            height: 110px;
+            width: 100px;
+            height: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin: 0 auto 20px auto;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         .logo-circle img {
-            width: 90px;
-            height: 90px;
+            width: 80px;
+            height: 80px;
             object-fit: cover;
             border-radius: 50%;
         }
@@ -116,42 +117,62 @@
             font-size: 13px;
             margin-top: 2px;
             margin-bottom: 0;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .login-container {
+                padding: 15px;
+                margin: 100px 10px 20px 10px;
+            }
+            .logo-circle {
+                width: 80px;
+                height: 80px;
+            }
+            .logo-circle img {
+                width: 60px;
+                height: 60px;
+            }
+            .input-group input {
+                font-size: 14px;
+            }
+            .login-btn {
+                font-size: 15px;
+                padding: 8px 0;
+            }
         }
     </style>
 </head>
 <body>
     <div class="login-header">
-        Grupo Desarrollo y Comunicacion S.A.C 
+        Grupo Desarrollo y Comunicacion S.A.C
     </div>
     <div class="login-container">
-        <div class="login-card">
-            <div class="logo-circle">
-                <img src="{{ asset('img/logo.png') }}" alt="Logo">
-            </div>
-            <form method="POST" action="{{ route('login') }}" style="width:100%;">
-                @csrf
-                <div class="input-group">
-                    <span class="input-icon"><i class="fa fa-envelope"></i></span>
-                    <input type="email" name="email" placeholder="ejemplo@correo.com" required autofocus>
-                </div>
-
-                <div class="input-group">
-                    <span class="input-icon"><i class="fa fa-key"></i></span>
-                    <input id="password" type="password" name="password" placeholder="Contraseña" maxlength="16" required>
-                    <span class="input-eye" onclick="togglePassword()">
-                        <i id="eyeIcon" class="fa fa-eye"></i>
-                    </span>
-                </div>
-
-                <button type="submit" class="login-btn">Ingresar</button>
-            </form>
-
-            @if ($errors->any())
-                <div class="invalid-feedback text-center mt-2">
-                    {{ $errors->first() }}
-                </div>
-            @endif
+        <div class="logo-circle">
+            <img src="{{ asset('img/logo.png') }}" alt="Logo">
         </div>
+        <form method="POST" action="{{ route('login') }}" style="width:100%;">
+            @csrf
+            <div class="input-group">
+                <span class="input-icon"><i class="fa fa-envelope"></i></span>
+                <input type="email" name="email" placeholder="ejemplo@correo.com" required autofocus>
+            </div>
+
+            <div class="input-group">
+                <span class="input-icon"><i class="fa fa-key"></i></span>
+                <input id="password" type="password" name="password" placeholder="Contraseña" maxlength="16" required>
+                <span class="input-eye" onclick="togglePassword()">
+                    <i id="eyeIcon" class="fa fa-eye"></i>
+                </span>
+            </div>
+
+            <button type="submit" class="login-btn">Ingresar</button>
+        </form>
+
+        @if ($errors->any())
+            <div class="invalid-feedback mt-2">
+                {{ $errors->first() }}
+            </div>
+        @endif
     </div>
     <script>
         function togglePassword() {
