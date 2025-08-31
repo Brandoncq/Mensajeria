@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\Reporte;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf; // Para imprimir en PDF
@@ -15,11 +16,9 @@ class ReporteAdminController extends Controller
     // Listar reportes
     public function index()
     {
-      $reportes = Reporte::with('categoria')
-        ->orderBy('fecha_sistema', 'desc')
-        ->get();
-
-    return view('dashboard.admin.reportes.index', compact('reportes'));
+     $usuarios = User::orderBy('nombre', 'asc')->get();
+    $reportes = Reporte::orderBy('fecha_sistema','desc')->get();
+    return view('dashboard.administrador', compact('reportes'));
     }
 
     // Ver detalle
@@ -42,7 +41,7 @@ class ReporteAdminController extends Controller
         $reporte = Reporte::findOrFail($id);
         $reporte->update($request->all());
 
-        return redirect()->route('dashboard.admin.reportes.index')->with('success', 'Reporte actualizado correctamente');
+        return redirect()->route('admin.reportes.index')->with('success', 'Reporte actualizado correctamente');
     }
 
     // Aprobar
@@ -81,7 +80,23 @@ class ReporteAdminController extends Controller
 
                 \Log::info("📱 Enviando SMS a: {$to}");
 
-                $mensaje = "Se aprobó el reporte #{$reporte->id_reporte}.";
+                $mensaje = "🚨 NUEVO REPORTE APROBADO\n";
+                $mensaje .= "ID: #{$reporte->id_reporte}\n";
+                $mensaje .= "Categoría: {$reporte->categoria->nombre}\n";
+                $mensaje .= "Fecha: " . date('d/m/Y', strtotime($reporte->fecha_evento)) . "\n";
+                $mensaje .= "Lugar: {$reporte->lugar}\n";
+                $mensaje .= "Descripción: " . substr($reporte->descripcion, 0, 100) . "...\n";
+                
+                if ($reporte->numero_personas) {
+                    $mensaje .= "Personas involucradas: {$reporte->numero_personas}\n";
+                }
+                
+                if ($reporte->tema_tratado) {
+                    $mensaje .= "Tema: " . substr($reporte->tema_tratado, 0, 50) . "...\n";
+                }
+                
+                $mensaje .= "Estado: ✅ APROBADO\n";
+                $mensaje .= "Ingresa a la plataforma para más detalles.";
                 $client->messages->create($to, [
                     'from' => $from,
                     'body' => $mensaje,
@@ -107,8 +122,34 @@ class ReporteAdminController extends Controller
     // Eliminar
     public function destroy($id)
     {
-        Reporte::destroy($id);
-        return redirect()->route('dashboard.admin.reportes.index')->with('success', 'Reporte eliminado');
+        try {
+            \DB::beginTransaction();
+
+            // Encontrar el reporte
+            $reporte = Reporte::findOrFail($id);
+
+            // Eliminar registros relacionados en orden adecuado
+            \App\Models\Archivo::where('id_reporte', $id)->delete();
+            \App\Models\Notificacion::where('id_reporte', $id)->delete();
+            \App\Models\ReporteAsociado::where('id_reporte', $id)->delete();
+            \App\Models\EdicionReporte::where('id_reporte', $id)->delete();
+            \App\Models\RespuestaAsociado::where('id_reporte', $id)->delete();
+            
+            // Finalmente eliminar el reporte
+            $reporte->delete();
+
+            \DB::commit();
+
+            return redirect()->route('admin.reportes.index')
+                ->with('success', 'Reporte y todos sus datos relacionados eliminados correctamente');
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Error al eliminar reporte: ' . $e->getMessage());
+            
+            return redirect()->route('admin.reportes.index')
+                ->with('error', 'Error al eliminar el reporte: ' . $e->getMessage());
+        }
     }
 
     // Imprimir en PDF

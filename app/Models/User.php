@@ -15,10 +15,14 @@ class User extends Authenticatable
     // Clave primaria personalizada
     protected $primaryKey = 'id_usuario';
 
+    public $timestamps = false; 
+
     // Campos que se pueden llenar masivamente
     protected $fillable = [
         'nombre',
         'email',
+        'dni',
+        'username',
         'telefono',
         'contrasena_hash',
         'rol',

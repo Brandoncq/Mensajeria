@@ -4,7 +4,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ReporteController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ReporteAdminController;
+use App\Http\Controllers\Admin\UserAdminController;
 use App\Models\Reporte;
+use App\Models\User;
 
 Route::get('/', [AuthController::class, 'showLoginForm']);
 
@@ -21,8 +23,9 @@ Route::get('dashboardEditor', function () {
 })->middleware(['auth', 'role:editor']);
 
 Route::get('dashboardAdministrador', function () {
-     $reportes = Reporte::orderBy('fecha_sistema','desc')->get();
-    return view('dashboard.administrador', compact('reportes'));
+    $reportes = Reporte::orderBy('fecha_sistema','desc')->get();
+    $usuarios = User::orderBy('nombre', 'asc')->get();
+    return view('dashboard.administrador', compact('reportes', 'usuarios'));
 })->middleware(['auth', 'role:administrador']);
 
 Route::middleware(['auth', 'role:monitor'])->group(function () {
@@ -41,4 +44,17 @@ Route::middleware(['auth', 'role:administrador'])->prefix('admin')->name('admin.
     Route::post('reportes/{id}/rechazar', [ReporteAdminController::class, 'rechazar'])->name('reportes.rechazar');
 
     Route::get('reportes/{id}/imprimir', [ReporteAdminController::class, 'imprimir'])->name('reportes.imprimir');
+});
+
+
+
+Route::middleware(['auth', 'role:administrador'])->prefix('admin')->name('admin.')->group(function () {
+    // Usuarios
+    Route::get('usuarios', [UserAdminController::class, 'index'])->name('usuarios.index');
+    Route::get('usuarios/create', [UserAdminController::class, 'create'])->name('usuarios.create');
+    Route::post('usuarios', [UserAdminController::class, 'store'])->name('usuarios.store');
+    Route::get('usuarios/{id}', [UserAdminController::class, 'show'])->name('usuarios.show');
+    Route::get('usuarios/{id}/edit', [UserAdminController::class, 'edit'])->name('usuarios.edit');
+    Route::put('usuarios/{id}', [UserAdminController::class, 'update'])->name('usuarios.update');
+    Route::delete('usuarios/{id}', [UserAdminController::class, 'destroy'])->name('usuarios.destroy');
 });

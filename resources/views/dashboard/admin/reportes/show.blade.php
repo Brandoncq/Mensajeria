@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detalle del Reporte</title>
+    <link rel="icon" type="image/png" href="/img/logo.png">
     @vite('resources/css/app.css')
 </head>
 <body class="font-sans bg-gray-50">
@@ -73,7 +74,7 @@
                 <form action="{{ route('admin.reportes.aprobar',$reporte->id_reporte) }}" method="POST" class="inline">
                     @csrf
                     <button type="button"
-                        onclick="document.getElementById('modal-aprobar').classList.remove('hidden')"
+                        onclick="toggleModal('modal-aprobar', true)"
                         class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
                         Aprobar
                     </button>
@@ -101,7 +102,7 @@
         </div>
     </div>
     <!-- Modal -->
-<div id="modal-aprobar" class="hidden fixed inset-0 flex items-center justify-center bg-black/60">
+<div id="modal-aprobar" class="hidden fixed inset-0 items-center justify-center bg-black/60">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
         <h2 class="text-xl font-semibold mb-4">Seleccionar área de interés</h2>
         <form action="{{ route('admin.reportes.aprobar', $reporte->id_reporte) }}" method="POST">
@@ -115,7 +116,7 @@
             </select>
 
             <div class="flex justify-end mt-4 space-x-2">
-                <button type="button" onclick="document.getElementById('modal-aprobar').classList.add('hidden')"
+                <button type="button" onclick="toggleModal('modal-aprobar', false)"
                     class="px-4 py-2 border rounded text-gray-600 hover:bg-gray-100">Cancelar</button>
                 <button type="submit"
                     class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Enviar</button>
@@ -123,6 +124,19 @@
         </form>
     </div>
 </div>
+<script>
+    function toggleModal(modalId, show = true) {
+        const modal = document.getElementById(modalId);
+        if (!modal) return;
 
+        if (show) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        } else {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    }
+</script>
 </body>
 </html>
