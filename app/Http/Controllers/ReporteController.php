@@ -16,27 +16,30 @@ class ReporteController extends Controller
             // Log para verificar que el método se ejecuta
             Log::info('Entrando al método store del ReporteController.');
 
-            // Validar campos según tus requerimientos
-            $validated = $request->validate([
+            // Validar campos comunes
+            $rules = [
                 'id_categoria' => 'required|integer',
                 'fecha_evento' => 'required|date',
                 'lugar' => 'required|string|max:255',
                 'descripcion' => 'required|string',
-                // ...otros campos según el formulario...
-            ]);
+            ];
 
-            // Log para verificar los datos validados
-            Log::info('Datos validados:', $validated);
-
-            // Validaciones específicas para la categoría F
+            // Agregar validaciones específicas para la categoría 6
             if ($request->id_categoria == 6) {
-                $request->validate([
+                $rules = array_merge($rules, [
+                    'latitud' => 'required|numeric',
+                    'longitud' => 'required|numeric',
                     'numero_personas' => 'required|integer|min:1',
                     'presencia_autoridades' => 'required|string',
                     'intervencion_serenazgo' => 'required|string',
                 ]);
-                Log::info('Validaciones adicionales para categoría F completadas.');
             }
+
+            // Validar los datos
+            $validated = $request->validate($rules);
+
+            // Log para verificar los datos validados
+            Log::info('Datos validados:', $validated);
 
             $validated['id_monitor'] = Auth::id(); // Asigna el monitor autenticado
             $validated['fecha_sistema'] = now()->setTimezone('America/Lima'); // Fecha del sistema en hora de Perú
@@ -93,7 +96,10 @@ class ReporteController extends Controller
             return redirect()->back()->with('success', 'Reporte enviado correctamente.');
         } catch (\Exception $e) {
             // Log para capturar errores
-            Log::error('Error al enviar el reporte:', ['error' => $e->getMessage()]);
+            Log::error('Error al enviar el reporte:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             // Redirigir con mensaje de error
             return redirect()->back()->with('error', 'Hubo un error al enviar el reporte. Inténtalo nuevamente.');
@@ -112,7 +118,7 @@ class ReporteController extends Controller
         $nombreUsuario = Auth::user()->nombre; // Asegúrate de que el modelo User tenga el campo 'nombre'
 
         // Crear el mensaje personalizado
-        $mensaje = "Reporte recibido de: $nombreUsuario";
+        $mensaje = "DECSAC MSS -> Reporte recibido de: $nombreUsuario";
 
         // Obtener administradores con rol 'administrador'
         $admins = \App\Models\User::where('rol', 'administrador')->get();
