@@ -106,7 +106,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ url('monitor/reportar') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ url('monitor/reportar') }}" enctype="multipart/form-data" id="reporteForm">
             @csrf
             <!-- Campo oculto para el ID del monitor -->
             <input type="hidden" name="id_monitor" value="{{ Auth::id() }}">
@@ -137,8 +137,16 @@
                 <textarea name="descripcion" class="form-control" rows="3" required></textarea>
             </div>
             <div class="form-group mb-3">
-                <label>Actores identificados (nombres, roles, vínculo)</label>
-                <textarea name="actores_identificados" class="form-control" rows="3"></textarea>
+                <label>Actores identificados (nombres, roles, vínculo):</label>
+                <div id="actores-container">
+                    <div class="d-flex align-items-center mb-2">
+                        <input type="text" name="actores_identificados[]" class="form-control me-2" placeholder="Nombre">
+                        <input type="text" name="actores_roles[]" class="form-control me-2" placeholder="Rol">
+                        <input type="text" name="actores_vinculos[]" class="form-control me-2" placeholder="Vínculo">
+                        <button type="button" class="btn btn-danger remove-actor-btn">Eliminar</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary mt-2" id="addActorButton">Añadir otro actor</button>
             </div>
             <div class="form-group mb-3">
                 <label>Tema tratado</label>
@@ -154,25 +162,51 @@
             </div>
             <div class="form-group mb-3">
                 <label>Adjuntar imágenes (máx. 5):</label>
-                <input type="file" name="imagenes[]" accept="image/*" multiple class="form-control" id="imagenes" capture="environment">
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-secondary" id="cameraButton">Abrir cámara</button>
+                    <button type="button" class="btn btn-secondary" id="fileButton">Añadir desde archivos</button>
+                </div>
+                <input type="file" name="imagenes[]" accept="image/*" id="cameraInput" capture="environment" class="d-none">
+                <input type="file" name="imagenes[]" accept="image/*" id="fileInput" class="d-none" multiple>
                 <div class="image-preview" id="image-preview"></div>
+                <small class="text-muted">Máximo 5 imágenes.</small>
             </div>
             <div class="form-group mb-3">
                 <label>Enlace (URL):</label>
-                <input type="url" name="enlace" class="form-control">
+                <div id="url-container">
+                    <div class="d-flex align-items-center mb-2">
+                        <input type="url" name="enlace[]" class="form-control" placeholder="Añadir enlace">
+                        <button type="button" class="btn btn-danger ms-2 remove-url-btn">Eliminar</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-secondary mt-2" id="addUrlButton">Añadir otro enlace</button>
+                <small class="text-muted">Máximo 5 enlaces.</small>
             </div>
             <div id="bloqueos-fields" style="display: none;">
                 <div class="form-group mb-3">
                     <label>Número de personas estimado</label>
-                    <input type="number" name="numero_personas" class="form-control">
+                    <input type="number" name="numero_personas" id="numero_personas" class="form-control" placeholder="Número de personas" required>
                 </div>
                 <div class="form-group mb-3">
                     <label>¿Presencia de autoridades o líderes locales?</label>
-                    <textarea name="presencia_autoridades" class="form-control" rows="3"></textarea>
+                    <textarea name="presencia_autoridades" id="presencia_autoridades" class="form-control" rows="3" placeholder="Explica si hubo presencia de autoridades" required></textarea>
                 </div>
                 <div class="form-group mb-3">
                     <label>Interviene serenazgo / PNP</label>
-                    <textarea name="intervencion_serenazgo" class="form-control" rows="3"></textarea>
+                    <textarea name="intervencion_serenazgo" id="intervencion_serenazgo" class="form-control" rows="3" placeholder="Explica si hubo intervención de serenazgo o PNP" required></textarea>
+                </div>
+            </div>
+            <div id="ubicacion-fields" style="display: none;">
+                <div class="form-group mb-3">
+                    <label>Ubicación</label>
+                    <div class="input-group">
+                        <input type="text" name="latitud" id="latitud" class="form-control" placeholder="Latitud" readonly required>
+                        <input type="text" name="longitud" id="longitud" class="form-control" placeholder="Longitud" readonly required>
+                        <button type="button" class="btn btn-primary" id="getLocationButton">
+                            <i class="fa fa-map-marker-alt"></i> Obtener ubicación
+                        </button>
+                    </div>
+                    <small class="text-muted">Presiona el botón para obtener tu ubicación.</small>
                 </div>
             </div>
             <button type="submit" class="btn btn-primary w-100 mt-3">Enviar Reporte</button>
@@ -182,34 +216,217 @@
         document.querySelector('select[name="id_categoria"]').addEventListener('change', function() {
             const categoria = this.value;
             const bloqueosFields = document.getElementById('bloqueos-fields');
-            if (categoria == 6) { // Categoría F
+            const ubicacionFields = document.getElementById('ubicacion-fields');
+
+            if (categoria == 6) { // Categoría 6: Bloqueo de vías
                 bloqueosFields.style.display = 'block';
+                ubicacionFields.style.display = 'block';
+
+                // Hacer que los campos sean obligatorios
+                document.getElementById('numero_personas').setAttribute('required', 'required');
+                document.getElementById('presencia_autoridades').setAttribute('required', 'required');
+                document.getElementById('intervencion_serenazgo').setAttribute('required', 'required');
+                document.getElementById('latitud').setAttribute('required', 'required');
+                document.getElementById('longitud').setAttribute('required', 'required');
             } else {
                 bloqueosFields.style.display = 'none';
+                ubicacionFields.style.display = 'none';
+
+                // Quitar el atributo "required" de los campos
+                document.getElementById('numero_personas').removeAttribute('required');
+                document.getElementById('presencia_autoridades').removeAttribute('required');
+                document.getElementById('intervencion_serenazgo').removeAttribute('required');
+                document.getElementById('latitud').removeAttribute('required');
+                document.getElementById('longitud').removeAttribute('required');
+
+                // Limpiar los valores de los campos ocultos
+                document.getElementById('numero_personas').value = '';
+                document.getElementById('presencia_autoridades').value = '';
+                document.getElementById('intervencion_serenazgo').value = '';
+                document.getElementById('latitud').value = '';
+                document.getElementById('longitud').value = '';
             }
         });
 
-        // Vista previa de imágenes
-        document.getElementById('imagenes').addEventListener('change', function(event) {
-            const previewContainer = document.getElementById('image-preview');
-            previewContainer.innerHTML = ''; // Limpiar vista previa
-            const files = event.target.files;
+        // Botones para añadir imágenes
+        const cameraButton = document.getElementById('cameraButton');
+        const fileButton = document.getElementById('fileButton');
+        const cameraInput = document.getElementById('cameraInput');
+        const fileInput = document.getElementById('fileInput');
+        const imagePreview = document.getElementById('image-preview');
 
-            if (files.length > 5) {
-                alert('Solo puedes subir hasta 5 imágenes.');
-                event.target.value = ''; // Limpiar selección
+        cameraButton.addEventListener('click', () => cameraInput.click());
+        fileButton.addEventListener('click', () => fileInput.click());
+
+        cameraInput.addEventListener('change', handleImageUpload);
+        fileInput.addEventListener('change', handleImageUpload);
+
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            if (imagePreview.children.length + files.length > 5) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Límite alcanzado',
+                    text: 'Solo puedes subir hasta 5 imágenes.',
+                    confirmButtonColor: '#d33',
+                });
                 return;
             }
-
             Array.from(files).forEach(file => {
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    previewContainer.appendChild(img);
+                    const imgContainer = document.createElement('div');
+                    imgContainer.classList.add('position-relative', 'me-2');
+                    imgContainer.innerHTML = `
+                        <img src="${e.target.result}" class="rounded" style="width: 80px; height: 80px; object-fit: cover;">
+                        <button type="button" class="btn-close position-absolute top-0 start-100 translate-middle" aria-label="Close"></button>
+                    `;
+                    imagePreview.appendChild(imgContainer);
+
+                    // Botón para eliminar la imagen
+                    imgContainer.querySelector('.btn-close').addEventListener('click', () => {
+                        imgContainer.remove();
+                    });
                 };
                 reader.readAsDataURL(file);
             });
+        }
+
+        // Botón para añadir más URLs
+        const addUrlButton = document.getElementById('addUrlButton');
+        const urlContainer = document.getElementById('url-container');
+
+        addUrlButton.addEventListener('click', () => {
+            if (urlContainer.children.length >= 5) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Límite alcanzado',
+                    text: 'Solo puedes añadir hasta 5 enlaces.',
+                    confirmButtonColor: '#d33',
+                });
+                return;
+            }
+            const urlGroup = document.createElement('div');
+            urlGroup.classList.add('d-flex', 'align-items-center', 'mb-2');
+            urlGroup.innerHTML = `
+                <input type="url" name="enlace[]" class="form-control" placeholder="Añadir enlace">
+                <button type="button" class="btn btn-danger ms-2 remove-url-btn">Eliminar</button>
+            `;
+            urlContainer.appendChild(urlGroup);
+
+            // Añadir evento para eliminar el enlace
+            urlGroup.querySelector('.remove-url-btn').addEventListener('click', () => {
+                urlGroup.remove();
+            });
+        });
+
+        // Añadir evento para eliminar enlaces existentes
+        document.querySelectorAll('.remove-url-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.target.closest('.d-flex').remove();
+            });
+        });
+
+        // Botón para añadir más actores
+        const addActorButton = document.getElementById('addActorButton');
+        const actoresContainer = document.getElementById('actores-container');
+
+        addActorButton.addEventListener('click', () => {
+            const actorGroup = document.createElement('div');
+            actorGroup.classList.add('d-flex', 'align-items-center', 'mb-2');
+            actorGroup.innerHTML = `
+                <input type="text" name="actores_identificados[]" class="form-control me-2" placeholder="Nombre">
+                <input type="text" name="actores_roles[]" class="form-control me-2" placeholder="Rol">
+                <input type="text" name="actores_vinculos[]" class="form-control me-2" placeholder="Vínculo">
+                <button type="button" class="btn btn-danger remove-actor-btn">Eliminar</button>
+            `;
+            actoresContainer.appendChild(actorGroup);
+
+            // Botón para eliminar el actor
+            actorGroup.querySelector('.remove-actor-btn').addEventListener('click', () => {
+                actorGroup.remove();
+            });
+        });
+
+        // Obtener ubicación del usuario
+        const getLocationButton = document.getElementById('getLocationButton');
+        const latitudInput = document.getElementById('latitud');
+        const longitudInput = document.getElementById('longitud');
+
+        getLocationButton.addEventListener('click', () => {
+            if (navigator.geolocation) {
+                Swal.fire({
+                    title: 'Obteniendo ubicación...',
+                    text: 'Por favor, espera mientras obtenemos tu ubicación.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        document.getElementById('latitud').value = position.coords.latitude;
+                        document.getElementById('longitud').value = position.coords.longitude;
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Ubicación obtenida',
+                            text: 'Se ha obtenido tu ubicación correctamente.',
+                            confirmButtonColor: '#3085d6',
+                        });
+                    },
+                    (error) => {
+                        let errorMessage = 'No se pudo obtener la ubicación.';
+                        if (error.code === 1) {
+                            errorMessage = 'Permiso denegado. Activa los permisos de ubicación en tu navegador.';
+                        } else if (error.code === 2) {
+                            errorMessage = 'Ubicación no disponible. Intenta nuevamente.';
+                        } else if (error.code === 3) {
+                            errorMessage = 'Tiempo de espera agotado. Intenta nuevamente.';
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error al obtener ubicación',
+                            text: errorMessage,
+                            confirmButtonColor: '#d33',
+                        });
+                    }
+                );
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Geolocalización no soportada',
+                    text: 'Tu navegador no soporta la geolocalización.',
+                    confirmButtonColor: '#d33',
+                });
+            }
+        });
+
+        document.getElementById('reporteForm').addEventListener('submit', function(event) {
+            const categoria = document.querySelector('select[name="id_categoria"]').value;
+            const latitud = document.getElementById('latitud').value;
+            const longitud = document.getElementById('longitud').value;
+            const submitButton = document.querySelector('button[type="submit"]');
+
+            // Validar ubicación solo si la categoría es "6"
+            if (categoria == 6) {
+                if (!latitud || !longitud) {
+                    event.preventDefault(); // Evita el envío del formulario
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ubicación requerida',
+                        text: 'Debes obtener tu ubicación antes de enviar el reporte.',
+                        confirmButtonColor: '#d33',
+                    });
+                    return;
+                }
+            }
+
+            // Cambiar el estado del botón a "Cargando"
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
         });
 
         @if (session('success'))
