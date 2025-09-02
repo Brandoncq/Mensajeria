@@ -13,6 +13,8 @@ class Reporte extends Model
 
     protected $primaryKey = 'id_reporte';
 
+    public $timestamps = false; // Si no tienes created_at y updated_at
+
     protected $fillable = [
         'id_monitor',
         'id_categoria',
@@ -33,15 +35,24 @@ class Reporte extends Model
         'fecha_aprobacion',
         'id_administrador_aprobador',
     ];
+
     public function categoria()
     {
         return $this->belongsTo(CategoriaEvento::class, 'id_categoria', 'id_categoria');
     }
-    public $timestamps = false; // Si no tienes created_at y updated_at
 
     public function archivos()
     {
         return $this->hasMany(\App\Models\Archivo::class, 'id_reporte');
     }
 
+    public function asociados()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'reporte_asociados',    // tabla intermedia
+            'id_reporte',           // clave foránea que apunta a reportes
+            'id_usuario'            // clave foránea que apunta a usuarios
+        );
+    }
 }

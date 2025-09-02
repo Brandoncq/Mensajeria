@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ReporteAdminController;
 use App\Http\Controllers\Admin\UserAdminController;
 use App\Models\Reporte;
 use App\Models\User;
+use App\Http\Controllers\AsociadoController;
 
 Route::get('/', [AuthController::class, 'showLoginForm']);
 
@@ -18,9 +19,7 @@ Route::get('dashboardMonitor', function () {
     return view('dashboard.monitor');
 })->middleware(['auth', 'role:monitor']);
 
-Route::get('dashboardEditor', function () {
-    return view('dashboard.editor');
-})->middleware(['auth', 'role:editor']);
+Route::get('dashboardEditor', [AsociadoController::class, 'dashboard'])->middleware(['auth', 'role:asociado']);
 
 Route::get('dashboardAdministrador', function () {
     $reportes = Reporte::orderBy('fecha_sistema','desc')->get();
@@ -46,8 +45,6 @@ Route::middleware(['auth', 'role:administrador'])->prefix('admin')->name('admin.
     Route::get('reportes/{id}/imprimir', [ReporteAdminController::class, 'imprimir'])->name('reportes.imprimir');
 });
 
-
-
 Route::middleware(['auth', 'role:administrador'])->prefix('admin')->name('admin.')->group(function () {
     // Usuarios
     Route::get('usuarios', [UserAdminController::class, 'index'])->name('usuarios.index');
@@ -57,4 +54,11 @@ Route::middleware(['auth', 'role:administrador'])->prefix('admin')->name('admin.
     Route::get('usuarios/{id}/edit', [UserAdminController::class, 'edit'])->name('usuarios.edit');
     Route::put('usuarios/{id}', [UserAdminController::class, 'update'])->name('usuarios.update');
     Route::delete('usuarios/{id}', [UserAdminController::class, 'destroy'])->name('usuarios.destroy');
+});
+
+// Agregar estas rutas para asociados
+Route::middleware(['auth', 'role:asociado'])->prefix('asociado')->name('asociado.')->group(function () {
+    Route::get('reportes/{id}', [AsociadoController::class, 'verReporte']);
+    Route::post('reportes/{id}/revisar', [AsociadoController::class, 'marcarRevisado']);
+    Route::post('areas/update', [AsociadoController::class, 'actualizarAreas'])->name('areas.update');
 });
