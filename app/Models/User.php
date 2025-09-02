@@ -15,6 +15,8 @@ class User extends Authenticatable
     // Clave primaria personalizada
     protected $primaryKey = 'id_usuario';
 
+    public $incrementing = true;
+    protected $keyType = 'int';
     public $timestamps = false; 
 
     // Campos que se pueden llenar masivamente
@@ -29,23 +31,24 @@ class User extends Authenticatable
         'activo',
     ];
 
-    // Campos ocultos al serializar
-    protected $hidden = [
-        'contrasena_hash',
-    ];
-
-    // Casts
-    protected function casts(): array
+    // ¡Este método debe retornar 'id_usuario'!
+    public function getAuthIdentifierName()
     {
-        return [
-            'fecha_creacion' => 'datetime',
-            'fecha_ultimo_login' => 'datetime',
-        ];
+        return 'id_usuario';
     }
 
-    // Importante: Laravel usa "password" por defecto, lo mapeamos
     public function getAuthPassword()
     {
         return $this->contrasena_hash;
+    }
+
+    public function reportesAsignados()
+    {
+        return $this->belongsToMany(
+            Reporte::class,
+            'reporte_asociados',    // tabla intermedia
+            'id_usuario',           // clave foránea que apunta a usuarios
+            'id_reporte'            // clave foránea que apunta a reportes
+        );
     }
 }

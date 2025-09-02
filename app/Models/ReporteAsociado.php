@@ -11,6 +11,7 @@ class ReporteAsociado extends Model
 
     protected $table = 'reporte_asociados';
     protected $primaryKey = 'id';
+    public $timestamps = false;
 
     protected $fillable = [
         'id_reporte',
@@ -18,15 +19,13 @@ class ReporteAsociado extends Model
         'fecha_asignacion'
     ];
 
-    public $timestamps = false;
-
     public function reporte()
     {
-        return $this->belongsTo(Reporte::class, 'id_reporte');
+        return $this->belongsTo(Reporte::class, 'id_reporte', 'id_reporte');
     }
 
     public function usuario()
     {
-        return $this->belongsTo(Usuario::class, 'id_usuario');
+        return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
     }
 }

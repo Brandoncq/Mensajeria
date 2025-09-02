@@ -153,8 +153,8 @@
         <form method="POST" action="{{ route('login') }}" style="width:100%;">
             @csrf
             <div class="input-group">
-                <span class="input-icon"><i class="fa fa-envelope"></i></span>
-                <input type="email" name="email" placeholder="ejemplo@correo.com" required autofocus>
+                <span class="input-icon"><i class="fa fa-user"></i></span>
+                <input type="text" name="username" placeholder="Usuario" required autofocus>
             </div>
 
             <div class="input-group">

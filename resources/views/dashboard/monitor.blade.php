@@ -88,6 +88,24 @@
     </style>
 </head>
 <body>
+    <!-- Navbar bonito con Bootstrap -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: #c0392b;">
+        <div class="container-fluid">
+            <span class="navbar-brand fw-bold">
+                <i class="fa fa-user-circle"></i>
+                {{ Auth::user()->nombre ?? Auth::user()->username ?? 'Monitor' }}
+            </span>
+            <div class="d-flex ms-auto">
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-light fw-bold">
+                        <i class="fa fa-sign-out-alt"></i> Cerrar sesión
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
     <div class="login-header">
         Grupo Desarrollo y Comunicacion S.A.C
     </div>
@@ -211,6 +229,7 @@
             </div>
             <button type="submit" class="btn btn-primary w-100 mt-3">Enviar Reporte</button>
         </form>
+
     </div>
     <script>
         document.querySelector('select[name="id_categoria"]').addEventListener('change', function() {
