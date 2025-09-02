@@ -11,9 +11,17 @@
 
 <div class="w-full mx-auto">
     <!-- Header -->
-    <div class="w-full mx-auto p-4 bg-[#c1392b]">
-        <h1 class="text-4xl font-extralight text-gray-100 mb-2">Panel de Administrador</h1>
-        <h2 class="text-2xl font-semibold text-gray-100">Editar Usuario #{{ $usuario->id_usuario }}</h2>
+    <div class="w-full mx-auto p-4 bg-[#c1392b] flex items-center justify-between">
+        <div>
+            <h1 class="text-4xl font-extralight text-gray-100 mb-2">Panel de Administrador</h1>
+            <h2 class="text-2xl font-semibold text-gray-100">Editar Usuario #{{ $usuario->id_usuario }}</h2>
+        </div>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="bg-gray-100 text-[#c1392b] font-bold px-4 py-2 rounded-lg shadow hover:bg-gray-200 transition">
+                <i class="fa fa-sign-out-alt"></i> Cerrar sesión
+            </button>
+        </form>
     </div>
 
     <!-- Formulario -->
@@ -70,7 +78,9 @@
             <!-- Teléfono -->
             <div>
                 <label for="telefono" class="block text-lg font-medium text-gray-700">Teléfono *</label>
-                <input type="text" name="telefono" id="telefono" value="{{ old('telefono', $usuario->telefono) }}" required maxlength="9"
+                <input type="text" name="telefono" id="telefono" value="{{ old('telefono', $usuario->telefono) }}" required
+                    maxlength="9" pattern="[0-9]{9}" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                     class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                 @error('telefono')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -80,7 +90,9 @@
             <!-- DNI -->
             <div>
                 <label for="dni" class="block text-lg font-medium text-gray-700">DNI *</label>
-                <input type="text" name="dni" id="dni" value="{{ old('dni', $usuario->dni) }}" required maxlength="8"
+                <input type="text" name="dni" id="dni" value="{{ old('dni', $usuario->dni) }}" required
+                    maxlength="8" pattern="[0-9]{8}" inputmode="numeric"
+                    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                     class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                 @error('dni')
                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>

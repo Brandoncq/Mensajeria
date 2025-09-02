@@ -11,9 +11,20 @@
 
     <div class="w-full mx-auto">
         <!-- Header -->
-        <div class="w-full mx-auto p-4 bg-[#c1392b]">
-            <h1 class="text-4xl font-extralight text-gray-100 mb-2">Panel de Administrador</h1>
-            <h2 class="text-2xl font-semibold text-gray-100">Detalle del Reporte #{{ $reporte->id_reporte }}</h2>
+        <div class="w-full mx-auto p-4 bg-[#c1392b] flex items-center justify-between">
+            <!-- Panel e info -->
+            <div>
+                <h1 class="text-4xl font-extralight text-gray-100 mb-2">Panel de Administrador</h1>
+                <h2 class="text-2xl font-semibold text-gray-100">Detalle del Reporte #{{ $reporte->id_reporte }}</h2>
+            </div>
+
+            <!-- Botón logout -->
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="bg-gray-100 text-[#c1392b] font-bold px-4 py-2 rounded-lg shadow hover:bg-gray-200 transition">
+                    <i class="fa fa-sign-out-alt"></i> Cerrar sesión
+                </button>
+            </form>
         </div>
 
         <!-- Contenido -->
@@ -24,6 +35,8 @@
             <p><span class="font-semibold text-gray-700">Estado:</span> 
                 @if($reporte->estado == 'aprobado')
                     <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded">Aprobado</span>
+                @elseif($reporte->estado == 'revisado')
+                    <span class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded">Revisado</span>
                 @elseif($reporte->estado == 'rechazado')
                     <span class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded">Rechazado</span>
                 @elseif($reporte->estado == 'pendiente')
@@ -76,7 +89,7 @@
                     <button type="button"
                         onclick="toggleModal('modal-aprobar', true)"
                         class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                        Aprobar
+                        Revisado
                     </button>
                 </form>
 

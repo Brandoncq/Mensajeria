@@ -11,9 +11,17 @@
 
     <div class="w-full mx-auto">
         <!-- Header -->
-        <div class="w-full mx-auto p-4 bg-[#c1392b]">
-            <h1 class="text-4xl font-extralight text-gray-100 mb-2">Panel de Administrador</h1>
-            <h2 class="text-2xl font-semibold text-gray-100">Editar Reporte #{{ $reporte->id_reporte }}</h2>
+        <div class="w-full mx-auto p-4 bg-[#c1392b] flex items-center justify-between">
+            <div>
+                <h1 class="text-4xl font-extralight text-gray-100 mb-2">Panel de Administrador</h1>
+                <h2 class="text-2xl font-semibold text-gray-100">Editar Reporte #{{ $reporte->id_reporte }}</h2>
+            </div>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="bg-gray-100 text-[#c1392b] font-bold px-4 py-2 rounded-lg shadow hover:bg-gray-200 transition">
+                    <i class="fa fa-sign-out-alt"></i> Cerrar sesión
+                </button>
+            </form>
         </div>
 
         <!-- Formulario -->
@@ -46,12 +54,13 @@
                         <option value="pendiente" @if($reporte->estado=='pendiente') selected @endif>Pendiente</option>
                         <option value="aprobado" @if($reporte->estado=='aprobado') selected @endif>Aprobado</option>
                         <option value="rechazado" @if($reporte->estado=='rechazado') selected @endif>Rechazado</option>
+                        <option value="revisado" @if($reporte->estado=='revisado') selected @endif>Revisado</option>
                     </select>
                 </div>
                 @if(!empty($reporte->numero_personas))
                     <div>
                         <label for="numero_personas" class="block text-lg font-medium text-gray-700">Número de Personas</label>
-                        <input type="number" name="numero_personas" id="numero_personas" min="0"
+                        <input type="number" name="numero_personas" id="numero_personas" min="0" oninput="this.value = this.value.replace(/[^0-9]/g, '');"
                             value="{{ old('numero_personas', $reporte->numero_personas) }}"
                             class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                     </div>
@@ -151,15 +160,6 @@
                     </div>
                 @endif
 
-                <!-- Administrador Aprobador -->
-                @if(!empty($reporte->id_administrador_aprobador))
-                    <div>
-                        <label for="id_administrador_aprobador" class="block text-lg font-medium text-gray-700">Administrador Aprobador</label>
-                        <input type="number" name="id_administrador_aprobador" id="id_administrador_aprobador"
-                            value="{{ old('id_administrador_aprobador', $reporte->id_administrador_aprobador) }}"
-                            class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
-                    </div>
-                @endif
                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     @forelse($reporte->archivos as $archivo)
                         @if($archivo->tipo === 'imagen')

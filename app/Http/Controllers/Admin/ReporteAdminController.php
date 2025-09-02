@@ -10,15 +10,17 @@ use Barryvdh\DomPDF\Facade\Pdf; // Para imprimir en PDF
 use App\Models\DetalleInteres;
 use App\Models\AreaInteres;
 use Twilio\Rest\Client;
+use App\Mail\ReporteAprobadoMail;
+use Illuminate\Support\Facades\Mail;
 
 class ReporteAdminController extends Controller
 {
     // Listar reportes
     public function index()
     {
-     $usuarios = User::orderBy('nombre', 'asc')->get();
-    $reportes = Reporte::orderBy('fecha_sistema','desc')->get();
-    return view('dashboard.administrador', compact('reportes'));
+        $usuarios = User::orderBy('nombre', 'asc')->get();
+        $reportes = Reporte::orderBy('fecha_sistema','desc')->get();
+        return view('dashboard.administrador', compact('usuarios', 'reportes'));
     }
 
     // Ver detalle
@@ -50,7 +52,7 @@ class ReporteAdminController extends Controller
         $reporte = Reporte::findOrFail($id);
 
         // Actualizar estado
-        $reporte->estado = 'aprobado';
+        $reporte->estado = 'revisado';
         $reporte->fecha_aprobacion = now();
         $reporte->id_administrador_aprobador = auth()->id();
         $reporte->save();
@@ -67,6 +69,8 @@ class ReporteAdminController extends Controller
         $sid = env('TWILIO_SID');
         $token = env('TWILIO_TOKEN');
         $from = env('TWILIO_FROM');
+        $fromWhatsApp = env('TWILIO_WHATSAPP') ?? $from;
+        
         $client = new \Twilio\Rest\Client($sid, $token);
 
         foreach ($usuarios as $detalle) {
@@ -96,16 +100,26 @@ class ReporteAdminController extends Controller
                 }
                 
                 $mensaje .= "Estado: ✅ APROBADO\n";
-                $mensaje .= "Ingresa a la plataforma para más detalles.";
+                $mensaje .= "Ingresa a la plataforma: " . config('app.url');
                 $client->messages->create($to, [
                     'from' => $from,
                     'body' => $mensaje,
+                ]);
+                if ($detalle->usuario->email) {
+                    \Log::info("Entro");
+                    Mail::to($detalle->usuario->email)
+                        ->send(new ReporteAprobadoMail($reporte));
+                }
+                $client->messages->create("whatsapp:$to", [
+                    'from' => "whatsapp:$fromWhatsApp",
+                    "body" => $mensaje,
                 ]);
             }
         }
 
 
-        return back()->with('success', 'Reporte aprobado y notificación enviada.');
+        return redirect()->route('dashboard.administrador')
+        ->with('success', 'Reporte aprobado y notificación enviada.');
     }
 
     // Rechazar
