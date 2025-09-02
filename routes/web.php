@@ -25,7 +25,7 @@ Route::get('dashboardAdministrador', function () {
     $reportes = Reporte::orderBy('fecha_sistema','desc')->get();
     $usuarios = User::orderBy('nombre', 'asc')->get();
     return view('dashboard.administrador', compact('reportes', 'usuarios'));
-})->middleware(['auth', 'role:administrador']);
+})->middleware(['auth', 'role:administrador'])->name('dashboard.administrador');
 
 Route::middleware(['auth', 'role:monitor'])->group(function () {
     Route::get('monitor/reportar', [ReporteController::class, 'create'])->name('monitor.reportar');
