@@ -5,6 +5,7 @@ use App\Http\Controllers\ReporteController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ReporteAdminController;
 use App\Http\Controllers\Admin\UserAdminController;
+use App\Http\Controllers\Admin\AreaAdminController;
 use App\Models\Reporte;
 use App\Models\User;
 use App\Http\Controllers\AsociadoController;
@@ -54,6 +55,13 @@ Route::middleware(['auth', 'role:administrador'])->prefix('admin')->name('admin.
     Route::get('usuarios/{id}/edit', [UserAdminController::class, 'edit'])->name('usuarios.edit');
     Route::put('usuarios/{id}', [UserAdminController::class, 'update'])->name('usuarios.update');
     Route::delete('usuarios/{id}', [UserAdminController::class, 'destroy'])->name('usuarios.destroy');
+
+        // Áreas de interés (AGREGAR ESTAS RUTAS)
+    Route::get('areas', [AreaAdminController::class, 'index'])->name('areas.index');
+    Route::post('areas', [AreaAdminController::class, 'store'])->name('areas.store');
+    Route::get('areas/{id}', [AreaAdminController::class, 'show'])->name('areas.show');
+    Route::put('areas/{id}', [AreaAdminController::class, 'update'])->name('areas.update');
+    Route::delete('areas/{id}', [AreaAdminController::class, 'destroy'])->name('areas.destroy');
 });
 
 // Agregar estas rutas para asociados

@@ -50,7 +50,7 @@ class ReporteAdminController extends Controller
     public function aprobar(Request $request, $id)
     {
         $reporte = Reporte::findOrFail($id);
-
+        \App\Models\Notificacion::where('id_reporte', $id)->delete();
         // Actualizar estado
         $reporte->estado = 'revisado';
         $reporte->fecha_aprobacion = now();
@@ -106,13 +106,22 @@ class ReporteAdminController extends Controller
                     'body' => $mensaje,
                 ]);
                 if ($detalle->usuario->email) {
-                    \Log::info("Entro");
                     Mail::to($detalle->usuario->email)
                         ->send(new ReporteAprobadoMail($reporte));
                 }
                 $client->messages->create("whatsapp:$to", [
                     'from' => "whatsapp:$fromWhatsApp",
                     "body" => $mensaje,
+                ]);
+                \App\Models\Notificacion::create([
+                    'id_reporte' => $id,
+                    'id_usuario_destino' => $detalle->usuario->id_usuario,
+                    'tipo' => 'sms',
+                    'contenido' => $mensaje,
+                    'fecha_envio' => now(),
+                    'estado' => 'enviado',
+                    'intentos' => 1,
+                    'error_mensaje' => null
                 ]);
             }
         }

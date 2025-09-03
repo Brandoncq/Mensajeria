@@ -5,9 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Administrador</title>
     <link rel="icon" type="image/png" href="/img/logo.png">
-    @vite('resources/css/app.css')
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        .area-badge {
+            display: inline-flex;
+            align-items: center;
+            background-color: #e5e7eb;
+            border-radius: 9999px;
+            padding: 0.25rem 0.75rem;
+            margin: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .area-badge button {
+            margin-left: 0.5rem;
+            color: #6b7280;
+            cursor: pointer;
+        }
+        .area-badge button:hover {
+            color: #374151;
+        }
+    </style>
 </head>
-<body class="font-sans">
+<body class="font-sans bg-gray-100 min-h-screen">
 
     <div class="w-full mx-auto">
         <div class="w-full mx-auto p-4 bg-[#c1392b] flex items-center justify-between">
@@ -22,11 +45,11 @@
             </form>
         </div>
         
-        <div class="flex flex-col lg:flex-row gap-6 mt-2">
+        <div class="flex flex-col lg:flex-row gap-6 mt-2 p-4">
             <!-- Columna 1: Listado de Reportes -->
-            <div class="w-full lg:w-1/2 px-6 py-3">
+            <div class="w-full lg:w-1/2 px-6 py-3 bg-white rounded-lg shadow">
                 <h2 class="text-2xl font-light text-gray-700 mb-4">Listado de Reportes</h2>
-                <div class="overflow-x-auto bg-white flex justify-center">
+                <div class="overflow-x-auto">
                     <table class="w-full border border-gray-400">
                         <thead class="bg-gray-100 text-gray-700">
                             <tr>
@@ -84,15 +107,21 @@
             </div>
 
             <!-- Columna 2: Listado de Usuarios -->
-            <div class="w-full lg:w-1/2 px-6 py-3">
+            <div class="w-full lg:w-1/2 px-6 py-3 bg-white rounded-lg shadow">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-2xl font-light text-gray-700">Listado de Usuarios</h2>
-                    <a href="{{ route('admin.usuarios.create') }}" 
-                       class="px-4 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition">
-                        + Nuevo Usuario
-                    </a>
+                    <div class="space-x-2">
+                        <button onclick="openAreaManager()" 
+                               class="px-4 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                            <i class="fas fa-tags mr-1"></i> Gestionar Áreas
+                        </button>
+                        <a href="{{ route('admin.usuarios.create') }}" 
+                           class="px-4 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                            + Nuevo Usuario
+                        </a>
+                    </div>
                 </div>
-                <div class="overflow-x-auto bg-white">
+                <div class="overflow-x-auto">
                     <table class="w-full border border-gray-400">
                         <thead class="bg-gray-100 text-gray-700">
                             <tr>
@@ -195,6 +224,69 @@
         </div>
     </div>
 
+    <!-- Modal para gestionar áreas de interés -->
+    <div id="areaManagerModal" class="hidden fixed inset-0 items-center justify-center bg-black/60 z-50 modal">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">Gestión de Áreas de Interés</h3>
+                <button onclick="closeAreaManager()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h4 class="text-lg font-medium text-gray-700 mb-3">Agregar Nueva Área</h4>
+                <form id="areaForm" class="flex items-end gap-2">
+                    @csrf
+                    <div class="flex-grow">
+                        <label for="nombreArea" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Área</label>
+                        <input type="text" id="nombreArea" name="nombre" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+                        <i class="fas fa-plus mr-1"></i> Agregar
+                    </button>
+                </form>
+            </div>
+            
+            <div>
+                <h4 class="text-lg font-medium text-gray-700 mb-3 px-5">Áreas Existentes</h4>
+                <div id="areasList" class="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg min-h-[100px]">
+                    <!-- Las áreas se cargarán dinámicamente con JavaScript -->
+                    <div class="text-center text-gray-500 w-full py-4">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando áreas...
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex justify-end space-x-4 mt-6">
+                <button onclick="closeAreaManager()" 
+                    class="px-4 py-2 text-gray-600 border border-gray-400 rounded hover:bg-gray-100 transition">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar área -->
+    <div id="confirmAreaModal" class="hidden fixed inset-0 items-center justify-center bg-black/60 z-50">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Confirmar Eliminación</h3>
+            <p class="text-gray-600 mb-6">¿Estás seguro de que deseas eliminar esta área? También se eliminarán todos los detalles relacionados. Esta acción no se puede deshacer.</p>
+            
+            <div class="flex justify-end space-x-4">
+                <button onclick="closeConfirmAreaModal()" 
+                    class="px-4 py-2 text-gray-600 border border-gray-400 rounded hover:bg-gray-100 transition">
+                    Cancelar
+                </button>
+                <button id="confirmAreaDelete" 
+                    class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">
+                    Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Funciones para modales de reportes
         function openModal(reporteId) {
@@ -224,10 +316,135 @@
             document.getElementById('confirmUserModal').classList.remove('flex');
         }
 
+        // Funciones para el modal de áreas
+        function openAreaManager() {
+            const modal = document.getElementById('areaManagerModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            loadAreas();
+        }
+
+        function closeAreaManager() {
+            document.getElementById('areaManagerModal').classList.add('hidden');
+            document.getElementById('areaManagerModal').classList.remove('flex');
+        }
+
+        // Funciones para el modal de confirmación de eliminación de área
+        function openConfirmAreaModal(areaId, areaName) {
+            currentAreaId = areaId;
+            document.getElementById('confirmAreaModal').classList.remove('hidden');
+            document.getElementById('confirmAreaModal').classList.add('flex');
+        }
+
+        function closeConfirmAreaModal() {
+            document.getElementById('confirmAreaModal').classList.add('hidden');
+            document.getElementById('confirmAreaModal').classList.remove('flex');
+            currentAreaId = null;
+        }
+
+        // Cargar áreas desde el servidor
+        async function loadAreas() {
+            try {
+                const response = await fetch('/admin/areas');
+                const areas = await response.json();
+                renderAreas(areas);
+            } catch (error) {
+                console.error('Error cargando áreas:', error);
+                document.getElementById('areasList').innerHTML = 
+                    '<div class="text-center text-red-500 w-full py-4">Error al cargar las áreas</div>';
+            }
+        }
+
+        // Renderizar áreas en la lista
+        function renderAreas(areas) {
+            const areasList = document.getElementById('areasList');
+            
+            if (areas.length === 0) {
+                areasList.innerHTML = '<div class="text-center text-gray-500 w-full py-4">No hay áreas registradas</div>';
+                return;
+            }
+            
+            areasList.innerHTML = '';
+            areas.forEach(area => {
+                const areaBadge = document.createElement('div');
+                areaBadge.className = 'area-badge';
+                areaBadge.innerHTML = `
+                    ${area.nombre}
+                    <button onclick="openConfirmAreaModal(${area.id_area_interes}, '${area.nombre}')" 
+                            title="Eliminar área">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                areasList.appendChild(areaBadge);
+            });
+        }
+
+        // Enviar formulario de área
+        document.getElementById('areaForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const nombre = formData.get('nombre');
+            
+            try {
+                const response = await fetch('/admin/areas', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ nombre })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Limpiar formulario y recargar áreas
+                    document.getElementById('nombreArea').value = '';
+                    loadAreas();
+                } else {
+                    alert('Error: ' + (data.message || 'No se pudo crear el área'));
+                }
+            } catch (error) {
+                console.error('Error creando área:', error);
+                alert('Error al crear el área');
+            }
+        });
+
+        // Eliminar área
+        document.getElementById('confirmAreaDelete').addEventListener('click', async function() {
+            if (!currentAreaId) return;
+            
+            try {
+                const response = await fetch(`/admin/areas/${currentAreaId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    closeConfirmAreaModal();
+                    loadAreas(); // Recargar la lista
+                } else {
+                    alert('Error: ' + (data.message || 'No se pudo eliminar el área'));
+                }
+            } catch (error) {
+                console.error('Error eliminando área:', error);
+                alert('Error al eliminar el área');
+            }
+        });
+
         // Cerrar modales al hacer clic fuera
         document.addEventListener('click', function(event) {
             const reportModal = document.getElementById('confirmModal');
             const userModal = document.getElementById('confirmUserModal');
+            const areaManagerModal = document.getElementById('areaManagerModal');
+            const confirmAreaModal = document.getElementById('confirmAreaModal');
             
             if (event.target === reportModal) {
                 closeModal();
@@ -235,7 +452,16 @@
             if (event.target === userModal) {
                 closeUserModal();
             }
+            if (event.target === areaManagerModal) {
+                closeAreaManager();
+            }
+            if (event.target === confirmAreaModal) {
+                closeConfirmAreaModal();
+            }
         });
+
+        // Variable global para almacenar el ID del área a eliminar
+        let currentAreaId = null;
     </script>
 </body>
 </html>
