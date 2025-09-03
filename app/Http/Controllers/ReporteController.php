@@ -59,12 +59,12 @@ class ReporteController extends Controller
                     // Guardar el archivo en el almacenamiento
                     $path = $imagen->storeAs('reportes', $uniqueName, 'public');
 
-                    // Guardar en la base de datos
+                    // Guardar en la base de datos SOLO EL NOMBRE
                     Archivo::create([
                         'id_reporte' => $reporte->id_reporte,
                         'tipo' => 'imagen',
-                        'url' => $path,
-                        'nombre_archivo' => $uniqueName, // Guardar el nombre único generado
+                        'url' => $uniqueName, // Solo el nombre del archivo
+                        'nombre_archivo' => $uniqueName,
                     ]);
 
                     // Log para verificar cada imagen guardada

@@ -83,11 +83,11 @@
                 @if($archivo->tipo == 'imagen')
                     <div class="col-md-3 mb-3">
                         <div class="card">
-                            <img src="{{ asset('storage/reportes/' . $archivo->nombre_archivo) }}" 
+                            <img src="{{ url('reportes/imagen/' . $archivo->url) }}" 
                                  class="card-img-top" 
                                  style="height: 150px; object-fit: cover; cursor: pointer;"
-                                 onclick="window.open('{{ asset('storage/reportes/' . $archivo->nombre_archivo) }}', '_blank')"
-                                 onerror="this.src='{{ asset('img/no-image.png') }}'; this.style.opacity='0.5';">
+                                 onclick="window.open('{{ url('reportes/imagen/' . $archivo->url) }}', '_blank')"
+                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2NjIi8+PHRleHQgeD0iNTAiIHk9IjUwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiIGZpbGw9IiM2NjYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5JbWFnZW4gbm8gZW5jb250cmFkYTwvdGV4dD48L3N2Zz4=';">
                             <div class="card-body p-2">
                                 <small class="text-muted">{{ $archivo->nombre_archivo ?? 'Imagen' }}</small>
                             </div>
