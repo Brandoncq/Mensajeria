@@ -70,3 +70,17 @@ Route::middleware(['auth', 'role:asociado'])->prefix('asociado')->name('asociado
     Route::post('reportes/{id}/revisar', [AsociadoController::class, 'marcarRevisado']);
     Route::post('areas/update', [AsociadoController::class, 'actualizarAreas'])->name('areas.update');
 });
+
+// Ruta para servir imágenes de reportes
+Route::get('reportes/imagen/{filename}', function ($filename) {
+    $path = storage_path('app/public/reportes/' . $filename);
+    
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    
+    $file = file_get_contents($path);
+    $type = mime_content_type($path);
+    
+    return response($file, 200)->header('Content-Type', $type);
+})->name('reportes.imagen');
