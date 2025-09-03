@@ -63,10 +63,10 @@
                         <tbody class="text-gray-600">
                             @foreach($reportes as $r)
                             <tr class="hover:bg-gray-50">
-                                <td class="px-2 py-2 border-b">{{ $r->id_reporte }}</td>
-                                <td class="px-2 py-2 border-b">{{ $r->categoria->nombre ?? 'Sin categoría' }}</td>
-                                <td class="px-4 py-2 border-b">{{ $r->fecha_evento }}</td>
-                                <td class="px-2 py-2 border-b">
+                                <td class="px-2 py-2 border-b border-gray-400">{{ $r->id_reporte }}</td>
+                                <td class="px-2 py-2 border-b border-gray-400">{{ $r->categoria->nombre ?? 'Sin categoría' }}</td>
+                                <td class="px-4 py-2 border-b border-gray-400">{{ $r->fecha_evento }}</td>
+                                <td class="px-2 py-2 border-b border-gray-400">
                                     @if($r->estado == 'aprobado')
                                         <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded">Aprobado</span>
                                     @elseif($r->estado == 'revisado')
@@ -79,7 +79,7 @@
                                         <span class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded">Borrador</span>
                                     @endif
                                 </td>
-                                <td class="px-2 py-2 border-b text-center space-x-1 space-y-1">
+                                <td class="px-2 py-2 border-b border-gray-400 text-center space-x-1 space-y-1">
                                     <a href="{{ route('admin.reportes.show',$r->id_reporte) }}"
                                     class="inline-block px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white transition">
                                     Ver
@@ -135,9 +135,9 @@
                         <tbody class="text-gray-600">
                             @foreach($usuarios as $usuario)
                             <tr class="hover:bg-gray-50">
-                                <td class="px-2 py-2 border-b">{{ $usuario->nombre }}</td>
-                                <td class="px-2 py-2 border-b">{{ $usuario->email }}</td>
-                                <td class="px-2 py-2 border-b">
+                                <td class="px-2 py-2 border-b border-gray-400">{{ $usuario->nombre }}</td>
+                                <td class="px-2 py-2 border-b border-gray-400">{{ $usuario->email }}</td>
+                                <td class="px-2 py-2 border-b border-gray-400">
                                     @if($usuario->rol == 'administrador')
                                         <span class="px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded">Administrador</span>
                                     @elseif($usuario->rol == 'monitor')
@@ -148,14 +148,14 @@
                                         <span class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded">{{ $usuario->rol }}</span>
                                     @endif
                                 </td>
-                                <td class="px-2 py-2 border-b">
+                                <td class="px-2 py-2 border-b border-gray-400">
                                     @if($usuario->activo)
                                         <span class="px-2 py-1 text-xs font-semibold bg-green-100 text-green-700 rounded">Activo</span>
                                     @else
                                         <span class="px-2 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded">Inactivo</span>
                                     @endif
                                 </td>
-                                <td class="px-2 py-2 border-b text-center space-x-1 space-y-1">
+                                <td class="px-2 py-2 border-b text-center space-x-1 space-y-1 border-gray-400">
                                     <a href="{{ route('admin.usuarios.show', $usuario->id_usuario) }}"
                                        class="inline-block px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded hover:bg-blue-600 hover:text-white transition">
                                         Ver
