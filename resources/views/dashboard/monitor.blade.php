@@ -85,6 +85,43 @@
                 padding: 8px;
             }
         }
+
+        /* Loader mejorado para el botón */
+        .btn-loading {
+            position: relative;
+            pointer-events: none !important;
+            opacity: 0.8;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff40;
+            border-top: 2px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Deshabilitar formulario completamente */
+        .form-disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -227,7 +264,7 @@
                     <small class="text-muted">Presiona el botón para obtener tu ubicación.</small>
                 </div>
             </div>
-            <button type="submit" class="btn btn-primary w-100 mt-3">Enviar Reporte</button>
+            <button type="submit" class="btn btn-primary w-100 mt-3" id="submitReporteBtn">Enviar Reporte</button>
         </form>
 
     </div>
@@ -443,16 +480,48 @@
                 }
             }
 
-            // Activar loader en el botón
+            // Mostrar loader con SweetAlert2 (SIN spinner adicional)
+            Swal.fire({
+                title: 'Enviando reporte...',
+                text: 'Por favor espera mientras procesamos tu reporte',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading(); // Solo este loader
+                }
+            });
+
+            // Deshabilitar completamente el formulario
+            this.classList.add('form-disabled');
+            
+            // Cambiar el estado del botón (sin spinner adicional)
             submitButton.disabled = true;
             submitButton.classList.add('btn-loading');
-            submitButton.innerHTML = `
-                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Enviando reporte...
-            `;
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = 'Enviando reporte...'; // Solo texto
 
             // Evitar múltiples envíos
-            this.style.pointerEvents = 'none';
+            submitButton.style.pointerEvents = 'none';
+            
+            // Timeout de seguridad (por si algo falla)
+            setTimeout(() => {
+                if (submitButton.disabled) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Tiempo de espera agotado',
+                        text: 'El envío está tomando más tiempo del esperado. Por favor, verifica tu conexión.',
+                        confirmButtonColor: '#d33',
+                    });
+                    
+                    // Reestablecer el botón
+                    submitButton.disabled = false;
+                    submitButton.classList.remove('btn-loading');
+                    submitButton.innerHTML = originalText;
+                    this.classList.remove('form-disabled');
+                }
+            }, 30000); // 30 segundos de timeout
         });
 
         @if (session('success'))
