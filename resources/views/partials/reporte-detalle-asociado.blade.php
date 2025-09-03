@@ -3,18 +3,24 @@
         <h6 class="fw-bold">Información General</h6>
         <p><strong>ID Reporte:</strong> {{ $reporte->id_reporte }}</p>
         <p><strong>Categoría:</strong> {{ $reporte->categoria->nombre ?? 'Sin categoría' }}</p>
+        <p><strong>Fecha del Sistema:</strong> {{ \Carbon\Carbon::parse($reporte->fecha_sistema)->format('d/m/Y H:i') }}</p>
         <p><strong>Fecha del Evento:</strong> {{ \Carbon\Carbon::parse($reporte->fecha_evento)->format('d/m/Y H:i') }}</p>
         <p><strong>Lugar:</strong> {{ $reporte->lugar }}</p>
         <p><strong>Estado:</strong> <span class="badge bg-success">{{ ucfirst($reporte->estado) }}</span></p>
     </div>
     <div class="col-md-6">
         <h6 class="fw-bold">Detalles Adicionales</h6>
-        @if($reporte->numero_personas)
-            <p><strong>Número de Personas:</strong> {{ $reporte->numero_personas }}</p>
+        
+        {{-- Campos específicos para categoría F (id_categoria = 6) --}}
+        @if($reporte->id_categoria == 6)
+            @if($reporte->numero_personas)
+                <p><strong>Número de Personas Estimado:</strong> {{ $reporte->numero_personas }}</p>
+            @endif
+            @if($reporte->latitud && $reporte->longitud)
+                <p><strong>Coordenadas:</strong> {{ $reporte->latitud }}, {{ $reporte->longitud }}</p>
+            @endif
         @endif
-        @if($reporte->latitud && $reporte->longitud)
-            <p><strong>Coordenadas:</strong> {{ $reporte->latitud }}, {{ $reporte->longitud }}</p>
-        @endif
+        
         @if($reporte->fecha_aprobacion)
             <p><strong>Fecha de Aprobación:</strong> {{ \Carbon\Carbon::parse($reporte->fecha_aprobacion)->format('d/m/Y H:i') }}</p>
         @endif
@@ -23,52 +29,92 @@
 
 <div class="row mt-3">
     <div class="col-12">
-        <h6 class="fw-bold">Descripción</h6>
+        <h6 class="fw-bold">Descripción del Hecho</h6>
         <div class="p-3 bg-light rounded">
             {{ $reporte->descripcion }}
         </div>
     </div>
 </div>
 
-@if($reporte->tema_tratado)
+@if($reporte->actores_identificados)
 <div class="row mt-3">
     <div class="col-12">
-        <h6 class="fw-bold">Tema Tratado</h6>
+        <h6 class="fw-bold">Actores Identificados</h6>
         <div class="p-3 bg-light rounded">
-            {{ $reporte->tema_tratado }}
+            @if(strpos($reporte->actores_identificados, ';') !== false)
+                {{-- Si tiene múltiples actores separados por ; --}}
+                <ul class="mb-0">
+                    @foreach(explode(';', $reporte->actores_identificados) as $actor)
+                        @if(trim($actor))
+                            <li>{{ trim($actor) }}</li>
+                        @endif
+                    @endforeach
+                </ul>
+            @else
+                {{-- Si es un solo actor o texto libre --}}
+                {{ $reporte->actores_identificados }}
+            @endif
         </div>
     </div>
 </div>
 @endif
 
-@if($reporte->acuerdos_compromisos)
-<div class="row mt-3">
-    <div class="col-12">
-        <h6 class="fw-bold">Acuerdos y Compromisos</h6>
-        <div class="p-3 bg-light rounded">
-            {{ $reporte->acuerdos_compromisos }}
+{{-- Campos específicos para categorías A-E (NO categoría F) --}}
+@if($reporte->id_categoria != 6)
+    @if($reporte->tema_tratado)
+    <div class="row mt-3">
+        <div class="col-12">
+            <h6 class="fw-bold">Tema Tratado</h6>
+            <div class="p-3 bg-light rounded">
+                {{ $reporte->tema_tratado }}
+            </div>
         </div>
     </div>
-</div>
-@endif
+    @endif
 
-@if($reporte->presencia_autoridades)
-<div class="row mt-3">
-    <div class="col-12">
-        <h6 class="fw-bold">Presencia de Autoridades</h6>
-        <div class="p-3 bg-light rounded">
-            {{ $reporte->presencia_autoridades }}
+    @if($reporte->acuerdos_compromisos)
+    <div class="row mt-3">
+        <div class="col-12">
+            <h6 class="fw-bold">Acuerdos o Compromisos Asumidos</h6>
+            <div class="p-3 bg-light rounded">
+                {{ $reporte->acuerdos_compromisos }}
+            </div>
         </div>
     </div>
-</div>
+    @endif
 @endif
 
-@if($reporte->intervencion_serenazgo)
+{{-- Campos específicos para categoría F (id_categoria = 6) --}}
+@if($reporte->id_categoria == 6)
+    @if($reporte->presencia_autoridades)
+    <div class="row mt-3">
+        <div class="col-12">
+            <h6 class="fw-bold">¿Presencia de Autoridades o Líderes Locales?</h6>
+            <div class="p-3 bg-light rounded">
+                {{ $reporte->presencia_autoridades }}
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($reporte->intervencion_serenazgo)
+    <div class="row mt-3">
+        <div class="col-12">
+            <h6 class="fw-bold">¿Interviene Serenazgo / PNP?</h6>
+            <div class="p-3 bg-light rounded">
+                {{ $reporte->intervencion_serenazgo }}
+            </div>
+        </div>
+    </div>
+    @endif
+@endif
+
+@if($reporte->recomendacion_preliminar)
 <div class="row mt-3">
     <div class="col-12">
-        <h6 class="fw-bold">Intervención de Serenazgo</h6>
+        <h6 class="fw-bold">Recomendación Preliminar</h6>
         <div class="p-3 bg-light rounded">
-            {{ $reporte->intervencion_serenazgo }}
+            {{ $reporte->recomendacion_preliminar }}
         </div>
     </div>
 </div>
@@ -97,7 +143,9 @@
                     <div class="col-md-6 mb-2">
                         <div class="alert alert-info p-2">
                             <i class="fa fa-link"></i>
-                            <a href="{{ $archivo->url }}" target="_blank" class="ms-2">{{ $archivo->url }}</a>
+                            <a href="{{ $archivo->url }}" target="_blank" class="ms-2">
+                                {{ $archivo->url }}
+                            </a>
                         </div>
                     </div>
                 @endif

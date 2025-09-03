@@ -9,6 +9,7 @@ use App\Models\RespuestaAsociado;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class AsociadoController extends Controller
 {
@@ -119,19 +120,39 @@ class AsociadoController extends Controller
     {
         $userId = Auth::id();
         
-        // Eliminar áreas actuales
-        DetalleInteres::where('id_usuario', $userId)->delete();
+        // Debug: Ver qué datos llegan
+        Log::info('Datos recibidos para áreas:', [
+            'user_id' => $userId,
+            'areas' => $request->all(),
+            'areas_array' => $request->areas ?? []
+        ]);
         
-        // Agregar nuevas áreas
-        if ($request->has('areas')) {
-            foreach ($request->areas as $areaId) {
-                DetalleInteres::create([
-                    'id_usuario' => $userId,
-                    'id_area_interes' => $areaId
-                ]);
+        try {
+            // Eliminar todas las áreas actuales del usuario
+            $deleted = DetalleInteres::where('id_usuario', $userId)->delete();
+            Log::info('Áreas eliminadas:', ['deleted_count' => $deleted]);
+            
+            // Agregar nuevas áreas seleccionadas
+            if ($request->has('areas') && is_array($request->areas)) {
+                foreach ($request->areas as $areaId) {
+                    // Verificar que el área existe
+                    if (AreaInteres::where('id_area_interes', $areaId)->exists()) {
+                        $created = DetalleInteres::create([
+                            'id_usuario' => $userId,
+                            'id_area_interes' => $areaId
+                        ]);
+                        Log::info('Área creada:', ['area_id' => $areaId, 'created' => $created ? 'yes' : 'no']);
+                    }
+                }
+            } else {
+                Log::info('No hay áreas para agregar');
             }
-        }
 
-        return redirect()->back()->with('success', 'Áreas de interés actualizadas correctamente');
+            return redirect()->back()->with('success', 'Áreas de interés actualizadas correctamente');
+            
+        } catch (\Exception $e) {
+            Log::error('Error al actualizar áreas:', ['error' => $e->getMessage()]);
+            return redirect()->back()->with('error', 'Error al actualizar áreas de interés: ' . $e->getMessage());
+        }
     }
 }

@@ -432,7 +432,7 @@
             // Validar ubicación solo si la categoría es "6"
             if (categoria == 6) {
                 if (!latitud || !longitud) {
-                    event.preventDefault(); // Evita el envío del formulario
+                    event.preventDefault();
                     Swal.fire({
                         icon: 'error',
                         title: 'Ubicación requerida',
@@ -443,9 +443,16 @@
                 }
             }
 
-            // Cambiar el estado del botón a "Cargando"
+            // Activar loader en el botón
             submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Enviando...';
+            submitButton.classList.add('btn-loading');
+            submitButton.innerHTML = `
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Enviando reporte...
+            `;
+
+            // Evitar múltiples envíos
+            this.style.pointerEvents = 'none';
         });
 
         @if (session('success'))

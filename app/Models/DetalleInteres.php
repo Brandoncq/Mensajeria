@@ -10,12 +10,19 @@ class DetalleInteres extends Model
     use HasFactory;
 
     protected $table = 'detallearea';
-    protected $primaryKey = 'id_area_interes';
+    
+    // NO tiene clave primaria autoincremental (es clave compuesta)
+    public $incrementing = false;
+    protected $keyType = 'string';
+    
+    // Sin clave primaria única, usa clave compuesta
+    protected $primaryKey = null;
+    
     public $timestamps = false;
 
     protected $fillable = [
-        'id_area_interes',
         'id_usuario',
+        'id_area_interes',
     ];
 
     public function usuario()

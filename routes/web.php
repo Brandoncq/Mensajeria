@@ -64,7 +64,7 @@ Route::middleware(['auth', 'role:administrador'])->prefix('admin')->name('admin.
     Route::delete('areas/{id}', [AreaAdminController::class, 'destroy'])->name('areas.destroy');
 });
 
-// Agregar estas rutas para asociados
+// Rutas para asociados
 Route::middleware(['auth', 'role:asociado'])->prefix('asociado')->name('asociado.')->group(function () {
     Route::get('reportes/{id}', [AsociadoController::class, 'verReporte']);
     Route::post('reportes/{id}/revisar', [AsociadoController::class, 'marcarRevisado']);
