@@ -26,7 +26,7 @@
 
         <!-- Formulario -->
         <div class="max-w-3xl mx-auto mt-8 bg-white shadow-md rounded-lg p-6">
-            <form action="{{ route('admin.reportes.update',$reporte->id_reporte) }}" method="POST" class="space-y-6">
+            <form action="{{ route('admin.reportes.update',$reporte->id_reporte) }}" method="POST" class="space-y-6" enctype="multipart/form-data">
                 @csrf @method('PUT')
 
                 <!-- Lugar -->
@@ -60,7 +60,7 @@
                 @if(!empty($reporte->numero_personas))
                     <div>
                         <label for="numero_personas" class="block text-lg font-medium text-gray-700">Número de Personas</label>
-                        <input type="number" name="numero_personas" id="numero_personas" min="0" oninput="this.value = this.value.replace(/[^0-9]/g, '');"
+                        <input type="number" name="numero_personas" id="numero_personas"required min="0" oninput="this.value = this.value.replace(/[^0-9]/g, '');"
                             value="{{ old('numero_personas', $reporte->numero_personas) }}"
                             class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                     </div>
@@ -124,7 +124,7 @@
                 @if(!empty($reporte->latitud))
                     <div>
                         <label for="latitud" class="block text-lg font-medium text-gray-700">Latitud</label>
-                        <input type="number" name="latitud" id="latitud" step="any"
+                        <input type="number" name="latitud" id="latitud" step="any" required
                             value="{{ old('latitud', $reporte->latitud) }}"
                             class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                     </div>
@@ -134,7 +134,7 @@
                 @if(!empty($reporte->longitud))
                     <div>
                         <label for="longitud" class="block text-lg font-medium text-gray-700">Longitud</label>
-                        <input type="number" name="longitud" id="longitud" step="any"
+                        <input type="number" name="longitud" id="longitud" step="any" required
                             value="{{ old('longitud', $reporte->longitud) }}"
                             class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                     </div>
@@ -144,7 +144,7 @@
                 @if(!empty($reporte->fecha_evento))
                     <div>
                         <label for="fecha_evento" class="block text-lg font-medium text-gray-700">Fecha del Evento</label>
-                        <input type="datetime-local" name="fecha_evento" id="fecha_evento"
+                        <input type="datetime-local" name="fecha_evento" id="fecha_evento" required
                             value="{{ $reporte->fecha_evento }}"
                             class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                     </div>
@@ -154,34 +154,66 @@
                 @if(!empty($reporte->fecha_aprobacion))
                     <div>
                         <label for="fecha_aprobacion" class="block text-lg font-medium text-gray-700">Fecha de Aprobación</label>
-                        <input type="datetime-local" name="fecha_aprobacion" id="fecha_aprobacion"
+                        <input type="datetime-local" name="fecha_aprobacion" id="fecha_aprobacion" required
                             value="{{ $reporte->fecha_aprobacion }}"
                             class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                     </div>
                 @endif
 
-                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    @forelse($reporte->archivos as $archivo)
-                        @if($archivo->tipo === 'imagen')
-                            <div class="border border-gray-400 rounded-lg overflow-hidden shadow-sm bg-gray-50 hover:shadow-md transition">
-                                <img src="{{ asset('storage/archivos/' . $archivo->nombre_archivo) }}" 
-                                    alt="Imagen" class="w-full h-40 object-cover">
-                                <div class="p-2 text-center text-sm text-gray-600">
-                                    Imagen adjunta
-                                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 border-b border-gray-400 pb-2 mb-4">Archivos Adjuntos Actuales</h3>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6" id="archivos-actuales">
+                        @forelse($reporte->archivos as $index => $archivo)
+                            <div class="border border-gray-400 rounded-lg overflow-hidden shadow-sm bg-gray-50 hover:shadow-md transition relative">
+                                @if($archivo->tipo === 'imagen')
+                                    <img src="{{ url(path:'reportes/imagen/' . $archivo->nombre_archivo) }}" 
+                                        alt="Imagen" class="w-full h-40 object-cover">
+                                    <div class="p-2 text-center text-sm text-gray-600">
+                                        Imagen adjunta
+                                    </div>
+                                @elseif($archivo->tipo === 'enlace')
+                                    <div class="p-4">
+                                        <span class="text-sm font-medium text-gray-700 break-words">{{ $archivo->url }}</span>
+                                    </div>
+                                    <div class="p-2 text-center text-sm text-gray-600">
+                                        Enlace adjunto
+                                    </div>
+                                @endif
+                                
+                                <!-- Botón para eliminar archivo -->
+                                <button type="button" 
+                                        class="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition eliminar-archivo"
+                                        data-archivo-id="{{ $archivo->id_archivo }}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
-                        @elseif($archivo->tipo === 'enlace')
-                            <div class="flex items-center justify-between border border-gray-400 rounded-lg p-3 shadow-sm bg-white hover:bg-gray-50 transition">
-                                <span class="text-sm font-medium text-gray-700 truncate">{{ $archivo->url }}</span>
-                                <a href="{{ $archivo->url }}" target="_blank" 
-                                class="ml-2 px-3 py-1 text-xs font-semibold bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                                Ver
-                                </a>
-                            </div>
-                        @endif
-                    @empty
-                        <p class="text-gray-500 italic">No hay archivos adjuntos para este reporte.</p>
-                    @endforelse
+                        @empty
+                            <p class="text-gray-500 italic">No hay archivos adjuntos para este reporte.</p>
+                        @endforelse
+                    </div>
+                    
+                    <!-- Campo oculto para archivos a eliminar -->
+                    <input type="hidden" name="archivos_eliminar" id="archivos-eliminar" value="">
+                </div>
+                
+                <!-- Sección para Añadir Nuevos Archivos -->
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-700 border-b border-gray-400 pb-2 mb-4">Añadir Nuevos Archivos</h3>
+                    
+                    <div id="nuevos-archivos">
+                        <!-- Los nuevos campos de archivo se añadirán aquí -->
+                    </div>
+                    
+                    <button type="button" id="agregar-imagen" class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition mr-2">
+                        + Añadir Imagen
+                    </button>
+                    
+                    <button type="button" id="agregar-enlace" class="mt-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                        + Añadir Enlace
+                    </button>
                 </div>
 
                 <!-- Botones -->
@@ -198,6 +230,61 @@
             </form>
         </div>
     </div>
-
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let archivosAEliminar = [];
+            let contadorArchivos = 0;
+            
+            // Manejar eliminación de archivos existentes
+            document.querySelectorAll('.eliminar-archivo').forEach(button => {
+                button.addEventListener('click', function() {
+                    const archivoId = this.getAttribute('data-archivo-id');
+                    archivosAEliminar.push(archivoId);
+                    document.getElementById('archivos-eliminar').value = archivosAEliminar.join(',');
+                    
+                    // Ocultar el archivo visualmente
+                    this.parentElement.style.display = 'none';
+                });
+            });
+            
+            // Añadir nuevo campo de imagen
+            document.getElementById('agregar-imagen').addEventListener('click', function() {
+                contadorArchivos++;
+                const nuevoArchivo = `
+                    <div class="mb-4 p-3 border border-gray-300 rounded" id="nuevo-archivo-${contadorArchivos}">
+                        <label class="block text-sm font-medium text-gray-700">Nueva Imagen</label>
+                        <input type="file" name="nuevas_imagenes[]" 
+                            class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm">
+                        <button type="button" class="mt-2 px-2 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 quitar-archivo" 
+                            data-id="${contadorArchivos}">Quitar</button>
+                    </div>
+                `;
+                document.getElementById('nuevos-archivos').insertAdjacentHTML('beforeend', nuevoArchivo);
+            });
+            
+            // Añadir nuevo campo de enlace
+            document.getElementById('agregar-enlace').addEventListener('click', function() {
+                contadorArchivos++;
+                const nuevoEnlace = `
+                    <div class="mb-4 p-3 border border-gray-300 rounded" id="nuevo-archivo-${contadorArchivos}">
+                        <label class="block text-sm font-medium text-gray-700">Nuevo Enlace</label>
+                        <input type="url" name="nuevos_enlaces[]" placeholder="https://ejemplo.com" 
+                            class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm">
+                        <button type="button" class="mt-2 px-2 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 quitar-archivo" 
+                            data-id="${contadorArchivos}">Quitar</button>
+                    </div>
+                `;
+                document.getElementById('nuevos-archivos').insertAdjacentHTML('beforeend', nuevoEnlace);
+            });
+            
+            // Quitar campos de archivo recién añadidos
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('quitar-archivo')) {
+                    const id = e.target.getAttribute('data-id');
+                    document.getElementById(`nuevo-archivo-${id}`).remove();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

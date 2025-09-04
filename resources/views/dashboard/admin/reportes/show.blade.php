@@ -29,6 +29,26 @@
 
         <!-- Contenido -->
         <div class="max-w-3xl mx-auto mt-8 bg-white shadow-md rounded-lg p-6 space-y-4">
+            @if($reporte->id_administrador_aprobador)
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 class="font-semibold text-blue-800 mb-2">Información del Administrador</h3>
+                <p><span class="font-medium text-gray-700">Administrador que aprobó/editó:</span> 
+                    {{ $reporte->administradorAprobador->nombre ?? 'Usuario #' . $reporte->id_administrador_aprobador }}
+                </p>
+                <p><span class="font-medium text-gray-700">Fecha de aprobación/edición:</span> 
+                    {{ $reporte->fecha_aprobacion ? $reporte->fecha_aprobacion : 'No especificada' }}
+                </p>
+                @if($reporte->administradorAprobador && $reporte->administradorAprobador->email)
+                <p><span class="font-medium text-gray-700">Email:</span> 
+                    {{ $reporte->administradorAprobador->email }}
+                </p>
+                @endif
+            </div>
+            @else
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <p class="text-yellow-800">Este reporte aún no ha sido aprobado o editado por un administrador.</p>
+            </div>
+            @endif
             <p><span class="font-semibold text-gray-700">Categoría:</span> {{ $reporte->categoria->nombre ?? 'Sin categoría' }}</p>
             <p><span class="font-semibold text-gray-700">Lugar:</span> {{ $reporte->lugar }}</p>
             <p><span class="font-semibold text-gray-700">Descripción:</span> {{ $reporte->descripcion }}</p>
@@ -55,14 +75,25 @@
             <p><span class="font-semibold text-gray-700">Tema Tratado:</span> {{ $reporte->tema_tratado ?? 'No especificado' }}</p>
             <p><span class="font-semibold text-gray-700">Acuerdos y Compromisos:</span> {{ $reporte->acuerdos_compromisos ?? 'No especificado' }}</p>
             <p><span class="font-semibold text-gray-700">Recomendación Preliminar:</span> {{ $reporte->recomendacion_preliminar ?? 'No especificado' }}</p>
-
+            <p>
+                <span class="font-semibold text-gray-700">Ubicación:</span> 
+                @if($reporte->latitud && $reporte->longitud)
+                    <a href="https://www.google.com/maps?q={{ $reporte->latitud }},{{ $reporte->longitud }}" 
+                    target="_blank" 
+                    class="text-blue-600 hover:underline">
+                    Ver en Google Maps
+                    </a>
+                @else
+                    <span class="text-gray-500">No especificada</span>
+                @endif
+            </p>
             <h3 class="text-lg font-semibold text-gray-700 border-b border-gray-400 pb-2 mb-4">Archivos Adjuntos</h3>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 @forelse($reporte->archivos as $archivo)
                     @if($archivo->tipo === 'imagen')
                         <div class="border border-gray-400 rounded-lg overflow-hidden shadow-sm bg-gray-50 hover:shadow-md transition">
-                            <img src="{{ asset('storage/archivos/' . $archivo->nombre_archivo) }}" 
+                            <img src="{{ url(path:'reportes/imagen/' . $archivo->nombre_archivo) }}" 
                                 alt="Imagen" class="w-full h-40 object-cover">
                             <div class="p-2 text-center text-sm text-gray-600">
                                 Imagen adjunta
