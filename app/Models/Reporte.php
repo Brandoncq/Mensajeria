@@ -55,4 +55,8 @@ class Reporte extends Model
             'id_usuario'            // clave foránea que apunta a usuarios
         );
     }
+    public function administradorAprobador()
+    {
+        return $this->belongsTo(User::class, 'id_administrador_aprobador', 'id_usuario');
+    }
 }
