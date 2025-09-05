@@ -112,7 +112,38 @@
                     <p class="text-gray-500 italic">No hay archivos adjuntos para este reporte.</p>
                 @endforelse
             </div>
-
+            @if($reporte->respuestasAsociados && $reporte->respuestasAsociados->count() > 0)
+                <h3 class="text-lg font-semibold text-gray-700 border-b border-gray-400 pb-2 mb-4">Observaciones de Asociados</h3>
+                
+                <div class="space-y-4">
+                    @foreach($reporte->respuestasAsociados as $respuesta)
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <p class="font-medium text-gray-800">
+                                        {{ $respuesta->usuario->nombre ?? 'Usuario #' . $respuesta->id_usuario }}
+                                    </p>
+                                    <p class="text-sm text-gray-600">
+                                        @if($respuesta->usuario && $respuesta->usuario->dni)
+                                            DNI: {{ $respuesta->usuario->dni }}
+                                        @endif
+                                    </p>
+                                </div>
+                                <span class="text-sm text-gray-500">
+                                    {{ $respuesta->fecha_respuesta ? \Carbon\Carbon::parse($respuesta->fecha_respuesta)->format('d/m/Y H:i') : 'Sin fecha' }}
+                                </span>
+                            </div>
+                            
+                            <p class="text-gray-700 bg-white p-3 rounded border">
+                                {{ $respuesta->respuesta }}
+                            </p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <h3 class="text-lg font-semibold text-gray-700 border-b border-gray-400 pb-2 mb-4">Observaciones de Asociados</h3>
+                <p class="text-gray-500 italic">No hay observaciones para este reporte.</p>
+            @endif
             <!-- Acciones -->
             <div class="flex justify-end space-x-3 mt-6">
                 <form action="{{ route('admin.reportes.aprobar',$reporte->id_reporte) }}" method="POST" class="inline">
@@ -154,6 +185,7 @@
             <label for="area_interes" class="block text-sm font-medium text-gray-700">Área de Interés</label>
             <select name="id_area_interes" id="area_interes" required
                 class="mt-1 p-2 block w-full border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
+                    <option value="todos">Todos los asociados</option>
                 @foreach($areas as $area)
                     <option value="{{ $area->id_area_interes }}">{{ $area->nombre }}</option>
                 @endforeach

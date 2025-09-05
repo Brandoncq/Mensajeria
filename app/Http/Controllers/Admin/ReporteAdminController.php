@@ -28,7 +28,7 @@ class ReporteAdminController extends Controller
     // Ver detalle
     public function show($id)
     {
-        $reporte = Reporte::with(['archivos', 'administradorAprobador'])->findOrFail($id);
+        $reporte = Reporte::with(['archivos', 'administradorAprobador', 'respuestasAsociados'])->findOrFail($id);
         $areas = AreaInteres::all();
         return view('dashboard.admin.reportes.show', compact('reporte', 'areas'));
     }
@@ -129,20 +129,28 @@ class ReporteAdminController extends Controller
         $idArea = $request->input('id_area_interes');
         \Log::info('🔎 Área seleccionada:', ['id_area_interes' => $idArea]);
         
-        // Buscar usuarios interesados en esa área
-        $usuarios = \App\Models\DetalleInteres::with('usuario')
-            ->where('id_area_interes', $idArea)
-            ->get();
-        \Log::info('👥 Usuarios encontrados en área:', $usuarios->toArray());
+        // Buscar usuarios interesados
+        if ($idArea == 'todos') {
+            // ✅ Obtener TODOS los usuarios (excepto administradores si quieres)
+            $usuarios = \App\Models\User::whereNotIn('rol', ['administrador', 'monitor'])->get();
+            \Log::info('👥 Todos los usuarios seleccionados:', $usuarios->toArray());
+        } else {
+            // Buscar usuarios por área específica
+            $usuarios = \App\Models\DetalleInteres::with('usuario')
+                ->where('id_area_interes', $idArea)
+                ->get()
+                ->pluck('usuario')
+                ->filter(); // Eliminar nulls
+            \Log::info('👥 Usuarios encontrados en área:', $usuarios->toArray());
+        }
         
         // Enviar notificación con Twilio
         $sid = env('TWILIO_SID');
         $token = env('TWILIO_TOKEN');
-        $fromSms = env('TWILIO_FROM'); // Número para SMS
-        $fromWhatsApp = env('TWILIO_WHATSAPP', 'whatsapp:+14155238886'); // Número para WhatsApp
+        $fromSms = env('TWILIO_FROM');
         
-        // Verificar que las credenciales de Twilio estén configuradas
-        if (empty($sid) || empty($token)) {
+        // Verificar credenciales
+        if (empty($sid) || empty($token) || empty($fromSms)) {
             \Log::error('❌ Credenciales de Twilio no configuradas');
             return redirect()->route('dashboard.administrador')
                 ->with('error', 'Configuración de Twilio incompleta. Notificaciones no enviadas.');
@@ -150,115 +158,84 @@ class ReporteAdminController extends Controller
 
         try {
             $client = new \Twilio\Rest\Client($sid, $token);
+            $smsEnviados = 0;
+            $erroresSms = 0;
 
-            foreach ($usuarios as $detalle) {
-                if ($detalle->usuario && $detalle->usuario->telefono) {
-                    // Asegurar formato con +51
-                    $to = $detalle->usuario->telefono;
+            foreach ($usuarios as $usuario) {
+                // ✅ Manejar tanto colección de DetalleInteres como de User directamente
+                $user = ($usuario instanceof \App\Models\DetalleInteres) ? $usuario->usuario : $usuario;
+                
+                if ($user && $user->telefono) {
+                    // Formatear número
+                    $to = $user->telefono;
                     if (!str_starts_with($to, '+')) {
-                        $to = '+51' . ltrim($to, '0'); // asume Perú, elimina 0 inicial
+                        $to = '+51' . ltrim($to, '0');
                     }
 
-                    \Log::info("📱 Enviando notificaciones a: {$to}");
+                    \Log::info("📱 Intentando enviar SMS a: {$to}");
 
-                    // Mensaje para SMS
-                    $mensajeSMS = "🚨 NUEVO REPORTE APROBADO\n";
-                    $mensajeSMS .= "ID: #{$reporte->id_reporte}\n";
-                    $mensajeSMS .= "Categoría: {$reporte->categoria->nombre}\n";
-                    $mensajeSMS .= "Fecha: " . date('d/m/Y', strtotime($reporte->fecha_evento)) . "\n";
-                    $mensajeSMS .= "Lugar: {$reporte->lugar}\n";
-                    $mensajeSMS .= "Descripción: " . substr($reporte->descripcion, 0, 100) . "...\n";
-                    
-                    if ($reporte->numero_personas) {
-                        $mensajeSMS .= "Personas involucradas: {$reporte->numero_personas}\n";
-                    }
-                    
-                    if ($reporte->tema_tratado) {
-                        $mensajeSMS .= "Tema: " . substr($reporte->tema_tratado, 0, 50) . "...\n";
-                    }
-                    
-                    $mensajeSMS .= "Estado: ✅ APROBADO\n";
-                    $mensajeSMS .= "Ingresa a la plataforma: " . config('app.url');
-
-                    // Mensaje para WhatsApp (más detallado y con formato)
-                    $mensajeWhatsApp = "🚨 *NUEVO REPORTE APROBADO*\n\n";
-                    $mensajeWhatsApp .= "📋 *ID:* #{$reporte->id_reporte}\n";
-                    $mensajeWhatsApp .= "📁 *Categoría:* {$reporte->categoria->nombre}\n";
-                    $mensajeWhatsApp .= "📅 *Fecha:* " . date('d/m/Y', strtotime($reporte->fecha_evento)) . "\n";
-                    $mensajeWhatsApp .= "📍 *Lugar:* {$reporte->lugar}\n";
-                    $mensajeWhatsApp .= "📝 *Descripción:* " . substr($reporte->descripcion, 0, 150) . "...\n";
-                    
-                    if ($reporte->numero_personas) {
-                        $mensajeWhatsApp .= "👥 *Personas involucradas:* {$reporte->numero_personas}\n";
-                    }
-                    
-                    if ($reporte->tema_tratado) {
-                        $mensajeWhatsApp .= "💬 *Tema:* " . substr($reporte->tema_tratado, 0, 80) . "...\n";
-                    }
-                    
-                    $mensajeWhatsApp .= "✅ *Estado:* APROBADO\n\n";
-                    $mensajeWhatsApp .= "🌐 *Ingresa a la plataforma:* " . config('app.url');
+                    $mensajeSMS = "Reporte #{$reporte->id_reporte} revisado. Ver: " . config('app.url');
 
                     try {
-                        // Enviar SMS (From y To son números regulares)
-                        $client->messages->create($to, [
-                            'from' => $fromSms, // Número regular de Twilio
+                        // Enviar SMS
+                        $message = $client->messages->create($to, [
+                            'from' => $fromSms,
                             'body' => $mensajeSMS,
                         ]);
+                        
                         \Log::info("✅ SMS enviado correctamente a: {$to}");
+                        $smsEnviados++;
+
+                        // Registrar notificación
+                        \App\Models\Notificacion::create([
+                            'id_reporte' => $id,
+                            'id_usuario_destino' => $user->id_usuario,
+                            'tipo' => 'sms',
+                            'contenido' => $mensajeSMS,
+                            'fecha_envio' => now(),
+                            'estado' => 'enviado',
+                            'intentos' => 1,
+                            'error_mensaje' => null
+                        ]);
 
                     } catch (\Exception $e) {
                         \Log::error("❌ Error enviando SMS a {$to}: " . $e->getMessage());
+                        $erroresSms++;
+
+                        \App\Models\Notificacion::create([
+                            'id_reporte' => $id,
+                            'id_usuario_destino' => $user->id_usuario,
+                            'tipo' => 'sms',
+                            'contenido' => $mensajeSMS,
+                            'fecha_envio' => now(),
+                            'estado' => 'error',
+                            'intentos' => 1,
+                            'error_mensaje' => $e->getMessage()
+                        ]);
                     }
 
-                    try {
-                        // Enviar WhatsApp (From y To deben ser números de WhatsApp)
-                        $client->messages->create(
-                            "whatsapp:{$to}", // Número destino en formato WhatsApp
-                            [
-                                'from' => $fromWhatsApp, // Número origen en formato WhatsApp
-                                'body' => $mensajeWhatsApp
-                            ]
-                        );
-                        \Log::info("✅ WhatsApp enviado correctamente a: {$to}");
-
-                    } catch (\Exception $e) {
-                        \Log::error("❌ Error enviando WhatsApp a {$to}: " . $e->getMessage());
-                    }
-
-                    // Enviar correo electrónico si tiene email
-                    if ($detalle->usuario->email) {
+                    // Enviar email si tiene
+                    if ($user->email) {
                         try {
-                            Mail::to($detalle->usuario->email)
+                            Mail::to($user->email)
                                 ->send(new ReporteAprobadoMail($reporte));
-                            \Log::info("✅ Email enviado a: {$detalle->usuario->email}");
+                            \Log::info("✅ Email enviado a: {$user->email}");
                         } catch (\Exception $e) {
-                            \Log::error("❌ Error enviando email a {$detalle->usuario->email}: " . $e->getMessage());
+                            \Log::error("❌ Error enviando email a {$user->email}: " . $e->getMessage());
                         }
                     }
-
-                    // Registrar notificación en base de datos
-                    \App\Models\Notificacion::create([
-                        'id_reporte' => $id,
-                        'id_usuario_destino' => $detalle->usuario->id_usuario,
-                        'tipo' => 'sms_whatsapp',
-                        'contenido' => $mensajeSMS,
-                        'fecha_envio' => now(),
-                        'estado' => 'enviado',
-                        'intentos' => 1,
-                        'error_mensaje' => null
-                    ]);
                 }
             }
 
+            \Log::info("📊 Resumen: {$smsEnviados} SMS enviados, {$erroresSms} errores");
+
             return redirect()->route('dashboard.administrador')
-                ->with('success', 'Reporte aprobado y notificaciones enviadas.');
+                ->with('success', "Reporte aprobado. {$smsEnviados} SMS enviados, {$erroresSms} errores.");
 
         } catch (\Exception $e) {
-            \Log::error('❌ Error general en el proceso de aprobación: ' . $e->getMessage());
-            
+            \Log::error('❌ Error general: ' . $e->getMessage());
             return redirect()->route('dashboard.administrador')
-                ->with('error', 'Reporte aprobado, pero hubo problemas con las notificaciones: ' . $e->getMessage());
+                ->with('error', 'Reporte aprobado, pero hubo problemas: ' . $e->getMessage());
         }
     }
     // Rechazar
