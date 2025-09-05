@@ -59,4 +59,10 @@ class Reporte extends Model
     {
         return $this->belongsTo(User::class, 'id_administrador_aprobador', 'id_usuario');
     }
+    
+    public function respuestasAsociados()
+    {
+        return $this->hasMany(RespuestaAsociado::class, 'id_reporte', 'id_reporte')
+                    ->with('usuario');
+    }
 }
