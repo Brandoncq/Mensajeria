@@ -217,7 +217,7 @@
                 </div>
 
                 <!-- Botones -->
-                <div class="flex justify-end space-x-4">
+                <div class="flex lg:justify-end max-lg:justify-center space-x-4">
                    <a href="{{ url('dashboardAdministrador') }}"
                         class="px-4 py-2 text-gray-600 border border-gray-400 rounded hover:bg-gray-100 transition">
                         Cancelar

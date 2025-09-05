@@ -145,7 +145,7 @@
                 <p class="text-gray-500 italic">No hay observaciones para este reporte.</p>
             @endif
             <!-- Acciones -->
-            <div class="flex justify-end space-x-3 mt-6">
+            <div class="flex lg:justify-end max-lg:justify-center flex-wrap space-x-3 space-y-3 mt-6">
                 <form action="{{ route('admin.reportes.aprobar',$reporte->id_reporte) }}" method="POST" class="inline">
                     @csrf
                     <button type="button"
