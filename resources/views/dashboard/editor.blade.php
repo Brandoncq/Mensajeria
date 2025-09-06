@@ -117,6 +117,45 @@
                         <h5 class="mb-0"><i class="fa fa-file-alt"></i> Reportes Asignados</h5>
                         <span class="badge bg-primary">{{ count($reportes) }} reportes</span>
                     </div>
+                    <div class="card-body border-bottom">
+                        <form id="filtrosForm" class="row g-3 align-items-end">
+                            <div class="col-md-2">
+                                <label class="form-label">Ordenar por</label>
+                                <select class="form-select" name="orden" onchange="aplicarFiltros()">
+                                    <option value="id_desc">ID (Más reciente)</option>
+                                    <option value="id_asc">ID (Más antiguo)</option>
+                                    <option value="fecha_desc">Fecha (Más reciente)</option>
+                                    <option value="fecha_asc">Fecha (Más antiguo)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Estado</label>
+                                <select class="form-select" name="estado" onchange="aplicarFiltros()">
+                                    <option value="">Todos</option>
+                                    <option value="aprobado">No Revisados</option>
+                                    <option value="revisado">Revisados</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Desde</label>
+                                <input type="date" class="form-control" name="fecha_desde" onchange="aplicarFiltros()">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Hasta</label>
+                                <input type="date" class="form-control" name="fecha_hasta" onchange="aplicarFiltros()">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Buscar</label>
+                                <input type="text" class="form-control" name="buscar" 
+                                       placeholder="ID o lugar..." onkeyup="aplicarFiltrosDebounced()">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-outline-secondary w-100" onclick="limpiarFiltros()">
+                                    <i class="fa fa-refresh"></i> Limpiar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-hover mb-0">
@@ -324,6 +363,135 @@
                 confirmButtonColor: '#c0392b'
             });
         @endif
+
+        // Debounce function para la búsqueda
+        let timeout = null;
+        function aplicarFiltrosDebounced() {
+            clearTimeout(timeout);
+            timeout = setTimeout(aplicarFiltros, 500);
+        }
+
+        // Función para ordenar reportes (agregar antes de las otras funciones)
+        function ordenarReportesPorDefecto() {
+            const tbody = document.querySelector('tbody');
+            const reportes = @json($reportes);
+            
+            // Ordenar por ID descendente (más reciente primero)
+            const reportesOrdenados = [...reportes].sort((a, b) => b.id_reporte - a.id_reporte);
+            
+            renderizarReportes(reportesOrdenados);
+        }
+
+        function renderizarReportes(resultados) {
+            const tbody = document.querySelector('tbody');
+            
+            tbody.innerHTML = resultados.length ? resultados.map(reporte => `
+                <tr>
+                    <td>${reporte.id_reporte}</td>
+                    <td>${reporte.categoria?.nombre || 'Sin categoría'}</td>
+                    <td>${new Date(reporte.fecha_evento).toLocaleString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })}</td>
+                    <td>${reporte.lugar}</td>
+                    <td>
+                        ${reporte.estado === 'revisado' 
+                            ? '<span class="badge bg-success">Revisado</span>'
+                            : '<span class="badge bg-warning text-dark">No Revisado</span>'
+                        }
+                    </td>
+                    <td>${reporte.fecha_asignacion ? new Date(reporte.fecha_asignacion).toLocaleDateString('es-ES') : 'Sin asignar'}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="verReporte(${reporte.id_reporte})">
+                                <i class="fa fa-eye"></i> Ver
+                            </button>
+                            <a href="/reportes/${reporte.id_reporte}/export/word" class="btn btn-sm btn-outline-info">
+                                <i class="fa fa-file-word"></i> Word
+                            </a>
+                            <a href="/reportes/${reporte.id_reporte}/export/pdf" class="btn btn-sm btn-outline-danger">
+                                <i class="fa fa-file-pdf"></i> PDF
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            `).join('') : `
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <i class="fa fa-search fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No se encontraron resultados</p>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function aplicarFiltros() {
+            const form = document.getElementById('filtrosForm');
+            const reportes = @json($reportes);
+            
+            let resultados = [...reportes];
+
+            const filtros = {
+                orden: form.orden.value,
+                estado: form.estado.value,
+                fecha_desde: form.fecha_desde.value,
+                fecha_hasta: form.fecha_hasta.value,
+                buscar: form.buscar.value.toLowerCase()
+            };
+
+            // Aplicar filtros
+            if (filtros.estado) {
+                resultados = resultados.filter(r => r.estado === filtros.estado);
+            }
+
+            if (filtros.fecha_desde) {
+                resultados = resultados.filter(r => r.fecha_evento >= filtros.fecha_desde);
+            }
+            if (filtros.fecha_hasta) {
+                resultados = resultados.filter(r => r.fecha_evento <= filtros.fecha_hasta);
+            }
+
+            if (filtros.buscar) {
+                resultados = resultados.filter(r => 
+                    r.id_reporte.toString().includes(filtros.buscar) ||
+                    r.lugar.toLowerCase().includes(filtros.buscar)
+                );
+            }
+
+            // Ordenar
+            resultados.sort((a, b) => {
+                switch(filtros.orden) {
+                    case 'id_desc':
+                        return b.id_reporte - a.id_reporte;
+                    case 'id_asc':
+                        return a.id_reporte - b.id_reporte;
+                    case 'fecha_desc':
+                        return new Date(b.fecha_evento) - new Date(a.fecha_evento);
+                    case 'fecha_asc':
+                        return new Date(a.fecha_evento) - new Date(b.fecha_evento);
+                    default:
+                        return b.id_reporte - a.id_reporte;
+                }
+            });
+
+            renderizarReportes(resultados);
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('filtrosForm').reset();
+            aplicarFiltros();
+        }
+
+        // Ejecutar al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Establecer orden por defecto
+            document.querySelector('select[name="orden"]').value = 'id_desc';
+            // Ordenar reportes por ID descendente
+            ordenarReportesPorDefecto();
+        });
     </script>
 </body>
 </html>
