@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AreaAdminController;
 use App\Models\Reporte;
 use App\Models\User;
 use App\Http\Controllers\AsociadoController;
+use App\Http\Controllers\ExportController;
 
 Route::get('/', [AuthController::class, 'showLoginForm']);
 
@@ -84,3 +85,7 @@ Route::get('reportes/imagen/{filename}', function ($filename) {
     
     return response($file, 200)->header('Content-Type', $type);
 })->name('reportes.imagen');
+
+// Rutas para exportar reportes
+Route::get('/reportes/{id}/export/word', [ExportController::class, 'exportWord'])->name('reportes.export.word');
+Route::get('/reportes/{id}/export/pdf', [ExportController::class, 'exportPdf'])->name('reportes.export.pdf');
