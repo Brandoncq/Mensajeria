@@ -20,8 +20,8 @@ class AsociadoController extends Controller
                                  ->pluck('id_area_interes')
                                  ->toArray();
         
-        // Obtener reportes aprobados asignados al usuario
-        $reportes = Reporte::where('estado', 'aprobado')
+        // Obtener reportes aprobados Y revisados asignados al usuario
+        $reportes = Reporte::whereIn('estado', ['aprobado', 'revisado'])
                           ->whereIn('id_reporte', function($query) {
                               $query->select('id_reporte')
                                     ->from('reporte_asociados')
@@ -31,17 +31,8 @@ class AsociadoController extends Controller
                           ->orderBy('fecha_sistema', 'desc')
                           ->get();
 
-        // Agregar información de revisión a cada reporte
+        // Ya no necesitamos agregar respuesta_texto porque usaremos el estado directamente
         foreach ($reportes as $reporte) {
-            // Verificar si ya respondió en respuesta_asociados
-            $respuesta = RespuestaAsociado::where('id_reporte', $reporte->id_reporte)
-                                        ->where('id_usuario', Auth::id())
-                                        ->first();
-            
-            $reporte->estado_revision = $respuesta ? 'revisado' : 'no_revisado';
-            $reporte->respuesta_texto = $respuesta ? $respuesta->respuesta : null;
-            
-            // Fecha de asignación desde reporte_asociados
             $asignacion = ReporteAsociado::where('id_reporte', $reporte->id_reporte)
                                        ->where('id_usuario', Auth::id())
                                        ->first();
@@ -54,8 +45,8 @@ class AsociadoController extends Controller
 
     public function verReporte($id)
     {
-        // Verificar que el reporte esté asignado al usuario y sea aprobado
-        $reporte = Reporte::where('estado', 'aprobado')
+        // Verificar que el reporte esté asignado al usuario y sea aprobado O revisado
+        $reporte = Reporte::whereIn('estado', ['aprobado', 'revisado'])
                          ->whereIn('id_reporte', function($query) {
                              $query->select('id_reporte')
                                    ->from('reporte_asociados')
@@ -79,41 +70,51 @@ class AsociadoController extends Controller
 
     public function marcarRevisado(Request $request, $id)
     {
-        // Verificar que el reporte existe y está asignado al usuario
-        $exists = ReporteAsociado::where('id_reporte', $id)
-                                ->where('id_usuario', Auth::id())
-                                ->exists();
+        try {
+            DB::beginTransaction();
 
-        if (!$exists) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Reporte no encontrado o no asignado'
-            ]);
-        }
+            // Verificar que el reporte existe y está asignado al usuario
+            $reporte = Reporte::whereIn('estado', ['aprobado', 'revisado'])
+                             ->whereIn('id_reporte', function($query) {
+                                 $query->select('id_reporte')
+                                      ->from('reporte_asociados')
+                                      ->where('id_usuario', Auth::id());
+                             })
+                             ->findOrFail($id);
 
-        // Crear o actualizar la respuesta
-        $respuesta = RespuestaAsociado::updateOrCreate(
-            [
+            // Solo permitir marcar como revisado si está en estado aprobado
+            if ($reporte->estado !== 'aprobado') {
+                throw new \Exception('El reporte ya fue revisado anteriormente.');
+            }
+
+            // Crear la respuesta
+            RespuestaAsociado::create([
                 'id_reporte' => $id,
-                'id_usuario' => Auth::id()
-            ],
-            [
-                'respuesta' => $request->input('observacion', 'Revisado'),
+                'id_usuario' => Auth::id(),
+                'respuesta' => $request->input('observacion'),
                 'fecha_respuesta' => now()
-            ]
-        );
+            ]);
 
-        if ($respuesta) {
+            // Actualizar estado del reporte a 'revisado'
+            $reporte->estado = 'revisado';
+            $reporte->save();
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Reporte marcado como revisado con observación'
+                'message' => 'Reporte marcado como revisado'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al marcar reporte como revisado: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al marcar como revisado: ' . $e->getMessage()
             ]);
         }
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Error al marcar como revisado'
-        ]);
     }
 
     public function actualizarAreas(Request $request)

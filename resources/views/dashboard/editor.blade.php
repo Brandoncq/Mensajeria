@@ -74,10 +74,22 @@
                         <form method="POST" action="{{ route('asociado.areas.update') }}">
                             @csrf
                             <div class="row">
-                                @foreach($areas as $area)
+                                <!-- Agregar opción "Todos" al inicio -->
                                 <div class="col-md-3 col-sm-6 mb-2">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" 
+                                               id="selectAll" 
+                                               onchange="toggleAllAreas(this)">
+                                        <label class="form-check-label fw-bold" for="selectAll">
+                                            <i class="fa fa-check-double"></i> Seleccionar Todos
+                                        </label>
+                                    </div>
+                                </div>
+                                <!-- Áreas existentes -->
+                                @foreach($areas as $area)
+                                <div class="col-md-3 col-sm-6 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input area-checkbox" type="checkbox" 
                                                name="areas[]" value="{{ $area->id_area_interes }}" 
                                                id="area{{ $area->id_area_interes }}"
                                                {{ in_array($area->id_area_interes, $misAreas) ? 'checked' : '' }}>
@@ -127,9 +139,9 @@
                                         <td>{{ \Carbon\Carbon::parse($reporte->fecha_evento)->format('d/m/Y H:i') }}</td>
                                         <td>{{ $reporte->lugar }}</td>
                                         <td>
-                                            @if($reporte->estado_revision == 'revisado')
+                                            @if($reporte->estado == 'revisado')
                                                 <span class="badge bg-success">Revisado</span>
-                                            @else
+                                            @elseif($reporte->estado == 'aprobado')
                                                 <span class="badge bg-warning text-dark">No Revisado</span>
                                             @endif
                                         </td>
@@ -137,10 +149,20 @@
                                             {{ $reporte->fecha_asignacion ? \Carbon\Carbon::parse($reporte->fecha_asignacion)->format('d/m/Y') : 'Sin asignar' }}
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="verReporte({{ $reporte->id_reporte }})">
-                                                <i class="fa fa-eye"></i> Ver
-                                            </button>
+                                            <div class="btn-group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="verReporte({{ $reporte->id_reporte }})">
+                                                    <i class="fa fa-eye"></i> Ver
+                                                </button>
+                                                <a href="{{ route('reportes.export.word', $reporte->id_reporte) }}" 
+                                                   class="btn btn-sm btn-outline-info">
+                                                    <i class="fa fa-file-word"></i> Word
+                                                </a>
+                                                <a href="{{ route('reportes.export.pdf', $reporte->id_reporte) }}" 
+                                                   class="btn btn-sm btn-outline-danger">
+                                                    <i class="fa fa-file-pdf"></i> PDF
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                     @empty
@@ -175,7 +197,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-red" id="marcarRevisado" onclick="marcarComoRevisado()">
+                    <button type="button" class="btn btn-red" id="marcarRevisado" onclick="marcarComoRevisado()" style="display: none;">
                         <i class="fa fa-check"></i> Marcar como Revisado
                     </button>
                 </div>
@@ -194,6 +216,11 @@
                 .then(data => {
                     if (data.success) {
                         document.getElementById('reporteContent').innerHTML = data.html;
+                        // Mostrar botón solo si no hay respuesta existente
+                        const btnMarcarRevisado = document.getElementById('marcarRevisado');
+                        const observacionText = document.getElementById('observacionText');
+                        btnMarcarRevisado.style.display = observacionText ? 'block' : 'none';
+                        
                         new bootstrap.Modal(document.getElementById('reporteModal')).show();
                     } else {
                         Swal.fire('Error', 'No se pudo cargar el reporte', 'error');
@@ -255,6 +282,30 @@
                 }
             });
         }
+
+        // Función para seleccionar/deseleccionar todas las áreas
+        function toggleAllAreas(checkbox) {
+            const areaCheckboxes = document.querySelectorAll('.area-checkbox');
+            areaCheckboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+        }
+
+        // Función para verificar si todas las áreas están seleccionadas
+        function checkIfAllSelected() {
+            const areaCheckboxes = document.querySelectorAll('.area-checkbox');
+            const selectAllCheckbox = document.getElementById('selectAll');
+            const allChecked = Array.from(areaCheckboxes).every(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+        }
+
+        // Agregar listener a cada checkbox de área
+        document.querySelectorAll('.area-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', checkIfAllSelected);
+        });
+
+        // Verificar estado inicial
+        checkIfAllSelected();
 
         @if (session('success'))
             Swal.fire({
