@@ -120,7 +120,7 @@ class ReporteAdminController extends Controller
         \App\Models\Notificacion::where('id_reporte', $id)->delete();
         
         // Actualizar estado
-        $reporte->estado = 'revisado';
+        $reporte->estado = 'aprobado';
         $reporte->fecha_aprobacion = now();
         $reporte->id_administrador_aprobador = auth()->id();
         $reporte->save();
@@ -143,7 +143,26 @@ class ReporteAdminController extends Controller
                 ->filter(); // Eliminar nulls
             \Log::info('👥 Usuarios encontrados en área:', $usuarios->toArray());
         }
-        
+        foreach ($usuarios as $usuario) {
+            $user = ($usuario instanceof \App\Models\DetalleInteres) ? $usuario->usuario : $usuario;
+            if ($user) {
+                // Verificar si ya existe esta asignación
+                $asignacionExistente = \App\Models\ReporteAsociado::where('id_reporte', $reporte->id_reporte)
+                    ->where('id_usuario', $user->id_usuario)
+                    ->first();
+                
+                if (!$asignacionExistente) {
+                    \App\Models\ReporteAsociado::create([
+                        'id_reporte' => $reporte->id_reporte,
+                        'id_usuario' => $user->id_usuario,
+                        'fecha_asignacion' => now()
+                    ]);
+                    \Log::info("✅ Usuario asociado al reporte: {$user->id_usuario}");
+                } else {
+                    \Log::info("ℹ️ Usuario ya estaba asociado al reporte: {$user->id_usuario}");
+                }
+            }
+        }
         // Enviar notificación con Twilio
         $sid = env('TWILIO_SID');
         $token = env('TWILIO_TOKEN');
@@ -229,23 +248,40 @@ class ReporteAdminController extends Controller
 
             \Log::info("📊 Resumen: {$smsEnviados} SMS enviados, {$erroresSms} errores");
 
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Reporte aprobado. {$smsEnviados} SMS enviados, {$erroresSms} errores."
+                ]);
+            }
             return redirect()->route('dashboard.administrador')
-                ->with('success', "Reporte aprobado. {$smsEnviados} SMS enviados, {$erroresSms} errores.");
+            ->with('success', "Reporte aprobado. {$smsEnviados} SMS enviados, {$erroresSms} errores.");
 
         } catch (\Exception $e) {
             \Log::error('❌ Error general: ' . $e->getMessage());
+             if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al aprobar el reporte: ' . $e->getMessage()
+                ], 500);
+            }
             return redirect()->route('dashboard.administrador')
                 ->with('error', 'Reporte aprobado, pero hubo problemas: ' . $e->getMessage());
         }
     }
     // Rechazar
-    public function rechazar($id)
+    public function rechazar(Request $request, $id)
     {
         $reporte = Reporte::findOrFail($id);
         $reporte->estado = 'rechazado';
         $reporte->id_administrador_aprobador = auth()->id();
         $reporte->save();
-
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Reporte rechazado correctamente'
+            ]);
+        }
         return back()->with('error', 'Reporte rechazado');
     }
 

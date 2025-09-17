@@ -12,7 +12,7 @@ class AuthController extends Controller
         Log::info('Mostrando formulario de login.');
         if (Auth::check()) {
             $user = Auth::user();
-            Log::info('Usuario ya autenticado.', ['id' => $user->id ?? null, 'username' => $user->username ?? null, 'rol' => $user->rol ?? null]);
+            Log::info('Usuario ya autenticado.', ['id' => $user->id ?? null, 'dni' => $user->dni ?? null, 'rol' => $user->rol ?? null]);
             switch ($user->rol) {
                 case 'monitor':
                     Log::info('Redirigiendo a dashboardMonitor.');
@@ -30,13 +30,13 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        Log::info('Intentando login.', ['username' => $request->input('username')]);
-        $credentials = $request->only('username', 'password');
+        Log::info('Intentando login.', ['dni' => $request->input('dni')]);
+        $credentials = $request->only('dni', 'password');
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             $user = Auth::user();
-            Log::info('Login exitoso.', ['id' => $user->id ?? null, 'username' => $user->username ?? null, 'rol' => $user->rol ?? null]);
+            Log::info('Login exitoso.', ['id' => $user->id ?? null, 'dni' => $user->dni ?? null, 'rol' => $user->rol ?? null]);
             // Redirigir según el rol
             switch ($user->rol) {
                 case 'monitor':
@@ -52,14 +52,14 @@ class AuthController extends Controller
                     Log::warning('Rol de usuario no autorizado.', ['rol' => $user->rol]);
                     Auth::logout();
                     return back()->withErrors([
-                        'username' => 'Rol de usuario no autorizado.'
+                        'dni' => 'Rol de usuario no autorizado.'
                     ]);
             }
         }
 
-        Log::warning('Login fallido.', ['username' => $credentials['username']]);
+        Log::warning('Login fallido.', ['dni' => $credentials['dni']]);
         return back()->withErrors([
-            'username' => 'Las credenciales no son correctas.',
+            'dni' => 'Las credenciales no son correctas.',
         ]);
     }
 

@@ -154,7 +154,7 @@
             @csrf
             <div class="input-group">
                 <span class="input-icon"><i class="fa fa-user"></i></span>
-                <input type="text" name="username" placeholder="Usuario" required autofocus>
+                <input type="text" name="dni" placeholder="Usuario" required autofocus>
             </div>
 
             <div class="input-group">
