@@ -13,7 +13,7 @@
             border-radius: 50%;
             width: 20px;
             height: 20px;
-            animation: spin 1s linear infinity;
+            animation: spin 1s linear infinite;
             visibility: hidden;
             display: inline-block;
             margin-right: 8px;
@@ -44,6 +44,44 @@
         .alert.show {
             opacity: 1;
             transform: translateY(0);
+        }
+        .user-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+            background-color: #f9fafb;
+        }
+        .user-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .user-item:last-child {
+            border-bottom: none;
+        }
+        .user-info {
+            flex: 1;
+        }
+        .user-name {
+            font-weight: 500;
+        }
+        .user-dni {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .user-telefono {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .no-users {
+            padding: 1rem;
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
         }
     </style>
 </head>
@@ -244,13 +282,25 @@
             <form id="form-aprobar">
                 @csrf
                 <label for="area_interes" class="block text-sm font-medium text-gray-700">Área de Interés</label>
-                <select name="id_area_interes" id="area_interes" required
+                <select name="id_area_interes" id="area_interes" required onchange="cargarUsuariosPorArea(this.value)"
                     class="mt-1 p-2 block w-full border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
                         <option value="todos">Todos los asociados</option>
                     @foreach($areas as $area)
                         <option value="{{ $area->id_area_interes }}">{{ $area->nombre }}</option>
                     @endforeach
                 </select>
+
+                <!-- Contenedor para mostrar usuarios del área seleccionada -->
+                 <div id="usuarios-area" class="mt-4">
+                    <h3 class="text-md font-medium text-gray-700 mb-2">Seleccionar usuarios:</h3>
+                    <div class="flex items-center mb-2">
+                        <input type="checkbox" id="seleccionar-todos" onchange="toggleSeleccionarTodos(this)">
+                        <label for="seleccionar-todos" class="ml-2 text-sm font-medium text-gray-700">Seleccionar todos</label>
+                    </div>
+                    <div id="lista-usuarios" class="user-list">
+                        <!-- Los usuarios se cargarán aquí dinámicamente -->
+                    </div>
+                </div>
 
                 <div class="flex justify-end mt-4 space-x-2">
                     <button type="button" onclick="toggleModal('modal-aprobar', false)"
@@ -340,33 +390,94 @@
             }, 300);
         }
         
+        // Función para cargar usuarios por área
+        function cargarUsuariosPorArea(idArea) {
+            const contenedorUsuarios = document.getElementById('usuarios-area');
+            const listaUsuarios = document.getElementById('lista-usuarios');
+            const seleccionarTodos = document.getElementById('seleccionar-todos');
+            
+            // Limpiar lista anterior
+            listaUsuarios.innerHTML = '';
+            seleccionarTodos.checked = false;
+            
+            // Mostrar spinner de carga
+            listaUsuarios.innerHTML = '<div class="no-users">Cargando usuarios...</div>';
+            contenedorUsuarios.classList.remove('hidden');
+            
+            // Hacer petición AJAX para obtener usuarios del área
+            fetch(`/admin/areas/${idArea}/usuarios`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                listaUsuarios.innerHTML = '';
+                
+                if (data.success && data.usuarios.length > 0) {
+                    data.usuarios.forEach(usuario => {
+                        const userItem = document.createElement('div');
+                        userItem.className = 'user-item';
+                        userItem.innerHTML = `
+                            <div class="flex items-center">
+                                <input type="checkbox" name="usuarios_seleccionados[]" value="${usuario.id_usuario}" 
+                                    class="usuario-checkbox mr-3" checked>
+                                <div class="user-info">
+                                    <div class="user-name">${usuario.nombre}</div>
+                                    <div class="user-dni">DNI: ${usuario.dni || 'No disponible'}</div>
+                                    <div class="user-telefono">Tel: ${usuario.telefono || 'No disponible'}</div>
+                                </div>
+                            </div>
+                        `;
+                        listaUsuarios.appendChild(userItem);
+                    });
+                } else {
+                    listaUsuarios.innerHTML = '<div class="no-users">No hay usuarios en esta área</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error al cargar usuarios:', error);
+                listaUsuarios.innerHTML = '<div class="no-users">Error al cargar usuarios</div>';
+            });
+        }
+        
+        function toggleSeleccionarTodos(checkbox) {
+            const checkboxes = document.querySelectorAll('.usuario-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+        }
+
         // Manejar confirmación de aprobar con AJAX
         document.getElementById('btn-aprobar-confirm').addEventListener('click', function() {
             const areaInteres = document.getElementById('area_interes').value;
-            const esTodos = areaInteres === 'todos';
+            
+            // Obtener usuarios seleccionados
+            const usuariosSeleccionados = [];
+            document.querySelectorAll('.usuario-checkbox:checked').forEach(checkbox => {
+                usuariosSeleccionados.push(checkbox.value);
+            });
+            
+            if (usuariosSeleccionados.length === 0) {
+                mostrarAlerta('error', 'Debe seleccionar al menos un usuario');
+                return;
+            }
             
             // Mostrar estado de carga en el botón
             document.getElementById('aprobar-text').classList.add('hidden');
             document.getElementById('aprobar-loading').classList.remove('hidden');
             this.disabled = true;
             
-            // Mensaje personalizado según la selección
-            let mensaje = 'Aprobando reporte...';
-            let detalle = '';
-            
-            if (esTodos) {
-                mensaje = 'Enviando notificaciones a todos los asociados';
-                detalle = 'Esta operación puede tomar varios segundos';
-            }
-            
             // Ocultar modal de aprobar y mostrar modal de carga general
             toggleModal('modal-aprobar', false);
-            mostrarCarga(mensaje, detalle);
+            mostrarCarga('Enviando notificaciones...', 'Esta operación puede tomar varios segundos');
             
             // Preparar datos del formulario
             const formData = new FormData();
             formData.append('_token', document.querySelector('input[name="_token"]').value);
             formData.append('id_area_interes', areaInteres);
+            formData.append('usuarios_seleccionados', JSON.stringify(usuariosSeleccionados));
             
             // Enviar solicitud AJAX
             fetch("{{ route('admin.reportes.aprobar', $reporte->id_reporte) }}", {
@@ -384,9 +495,9 @@
                 if (data.success) {
                     mostrarAlerta('success', data.message);
                     // Recargar la página después de 2 segundos para ver los cambios
-            
+                    setTimeout(() => {
                         window.location.reload();
-                    
+                    }, 2000);
                 } else {
                     mostrarAlerta('error', data.message || 'Error al aprobar el reporte');
                     // Habilitar botón nuevamente
@@ -436,9 +547,9 @@
                 if (data.success) {
                     mostrarAlerta('success', data.message);
                     // Recargar la página después de 2 segundos para ver los cambios
-                 
+                    setTimeout(() => {
                         window.location.reload();
-                   
+                    }, 2000);
                 } else {
                     mostrarAlerta('error', data.message || 'Error al rechazar el reporte');
                     // Habilitar botón nuevamente

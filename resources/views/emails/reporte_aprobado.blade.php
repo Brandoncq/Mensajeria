@@ -40,6 +40,29 @@
             text-decoration: none;
             border-radius: 4px;
             margin: 15px 0;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #c0392b;
+        }
+        /* Botón imprimir */
+        .btn-imprimir {
+            display: inline-block;
+            background-color: #8e44ad;
+            color: white;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px solid #8e44ad;
+            transition: all 0.3s ease;
+        }
+        .btn-imprimir:hover {
+            background-color: white;
+            color: #8e44ad;
         }
     </style>
 </head>
@@ -69,6 +92,14 @@
 
         <div style="text-align: center; margin: 25px 0;">
             <a href="{{ config('app.url') }}" target="_blank" class="btn">Ver Reporte</a>
+        </div>
+
+        <div style="text-align: center; margin: 25px 0;">
+            <a href="{{ config('app.url') }}/reportes/{{ $reporte->id_reporte }}/export/pdf"
+               target="_blank" 
+               class="btn-imprimir">
+               Descargar
+            </a>
         </div>
 
         <p>
