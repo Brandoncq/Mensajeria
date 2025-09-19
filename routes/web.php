@@ -63,6 +63,7 @@ Route::middleware(['auth', 'role:administrador'])->prefix('admin')->name('admin.
     Route::get('areas/{id}', [AreaAdminController::class, 'show'])->name('areas.show');
     Route::put('areas/{id}', [AreaAdminController::class, 'update'])->name('areas.update');
     Route::delete('areas/{id}', [AreaAdminController::class, 'destroy'])->name('areas.destroy');
+    Route::get('areas/{id}/usuarios', [AreaAdminController::class, 'getUsuariosPorArea'])->name('areas.usuarios');
 });
 
 // Rutas para asociados

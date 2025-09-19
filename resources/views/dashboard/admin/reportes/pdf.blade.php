@@ -141,11 +141,14 @@
     @forelse($reporte->archivos as $archivo)
         @if($archivo->tipo === 'imagen')
             <li>
-                <img src="{{ public_path('storage/archivos/' . $archivo->nombre_archivo) }}" 
-                     alt="Imagen" width="200">
+                <div class="archivo-info">Imagen: {{ $archivo->nombre_archivo }}</div>
+                <div>URL: {{ url('reportes/imagen/' . $archivo->nombre_archivo) }}</div>
             </li>
         @elseif($archivo->tipo === 'enlace')
-            <li>Enlace: {{ $archivo->url }}</li>
+            <li>
+                <div class="archivo-info">Enlace:</div>
+                <div>{{ $archivo->url }}</div>
+            </li>
         @endif
     @empty
         <li>No hay archivos adjuntos.</li>

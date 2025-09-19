@@ -67,4 +67,57 @@ class AreaAdminController extends Controller
             'message' => 'Área eliminada correctamente'
         ]);
     }
+
+    public function getUsuariosPorArea($id)
+    {
+        try {
+            \Log::info('🔍 Iniciando getUsuariosPorArea', ['id_solicitado' => $id]);
+            
+            if ($id == 'todos') {
+                \Log::info('📋 Obteniendo TODOS los usuarios (excepto admin/monitor)');
+                $usuarios = User::whereNotIn('rol', ['administrador', 'monitor'])->get();
+                \Log::info('✅ Usuarios encontrados (todos)', ['count' => $usuarios->count()]);
+            } else {
+                \Log::info('📋 Buscando usuarios para área específica', ['id_area' => $id]);
+                
+                $detallesInteres = DetalleInteres::with('usuario')
+                    ->where('id_area_interes', $id)
+                    ->get();
+                    
+                \Log::info('📊 DetallesInteres encontrados', [
+                    'count' => $detallesInteres->count(),
+                    'detalles_ids' => $detallesInteres->pluck('id')->toArray()
+                ]);
+                
+                $usuarios = $detallesInteres->pluck('usuario')
+                    ->filter()
+                    ->values();
+                    
+                \Log::info('👥 Usuarios filtrados', [
+                    'count' => $usuarios->count(),
+                    'usuarios_ids' => $usuarios->pluck('id_usuario')->toArray(),
+                    'usuarios_nombres' => $usuarios->pluck('nombre')->toArray()
+                ]);
+            }
+            
+            \Log::info('📦 Preparando respuesta JSON', ['total_usuarios' => $usuarios->count()]);
+            
+            return response()->json([
+                'success' => true,
+                'usuarios' => $usuarios
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('❌ Error en getUsuariosPorArea', [
+                'id_solicitado' => $id,
+                'error_message' => $e->getMessage(),
+                'error_trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cargar usuarios: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

@@ -125,26 +125,30 @@ class ReporteAdminController extends Controller
         $reporte->id_administrador_aprobador = auth()->id();
         $reporte->save();
 
-        // Obtener el área seleccionada
+        // Obtener usuarios seleccionados
+        $usuariosSeleccionados = json_decode($request->input('usuarios_seleccionados', '[]'), true);
         $idArea = $request->input('id_area_interes');
-        \Log::info('🔎 Área seleccionada:', ['id_area_interes' => $idArea]);
         
-        // Buscar usuarios interesados
+        \Log::info('🔎 Usuarios seleccionados:', [
+            'id_area_interes' => $idArea,
+            'usuarios_seleccionados' => $usuariosSeleccionados,
+            'count' => count($usuariosSeleccionados)
+        ]);
+        
+        // Buscar usuarios según selección
         if ($idArea == 'todos') {
-            // ✅ Obtener TODOS los usuarios (excepto administradores si quieres)
-            $usuarios = \App\Models\User::whereNotIn('rol', ['administrador', 'monitor'])->get();
-            \Log::info('👥 Todos los usuarios seleccionados:', $usuarios->toArray());
+            $usuarios = \App\Models\User::whereIn('id_usuario', $usuariosSeleccionados)
+                ->whereNotIn('rol', ['administrador', 'monitor'])
+                ->get();
         } else {
-            // Buscar usuarios por área específica
-            $usuarios = \App\Models\DetalleInteres::with('usuario')
-                ->where('id_area_interes', $idArea)
-                ->get()
-                ->pluck('usuario')
-                ->filter(); // Eliminar nulls
-            \Log::info('👥 Usuarios encontrados en área:', $usuarios->toArray());
+            $usuarios = \App\Models\User::whereIn('id_usuario', $usuariosSeleccionados)
+                ->get();
         }
-        foreach ($usuarios as $usuario) {
-            $user = ($usuario instanceof \App\Models\DetalleInteres) ? $usuario->usuario : $usuario;
+        
+        \Log::info('👥 Usuarios a notificar:', $usuarios->pluck('id_usuario')->toArray());
+        
+        // ... el resto del método permanece igual (asociar usuarios y enviar notificaciones) ...
+        foreach ($usuarios as $user) {
             if ($user) {
                 // Verificar si ya existe esta asignación
                 $asignacionExistente = \App\Models\ReporteAsociado::where('id_reporte', $reporte->id_reporte)
