@@ -3,17 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Reporte;
-use Illuminate\Http\Request;
-use Barryvdh\DomPDF\Facade\Pdf; // Para imprimir en PDF
-use App\Models\DetalleInteres;
-use App\Models\AreaInteres;
-use Twilio\Rest\Client;
 use App\Mail\ReporteAprobadoMail;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage; // Añadir esta línea
-use Illuminate\Support\Facades\DB; // También es buena práctica importar DB
+use App\Models\AreaInteres;
+use App\Models\DetalleInteres;
+use App\Models\Reporte; // Para imprimir en PDF
+use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail; // Añadir esta línea
+use Illuminate\Support\Facades\Storage; // También es buena práctica importar DB
 
 class ReporteAdminController extends Controller
 {
@@ -21,7 +20,8 @@ class ReporteAdminController extends Controller
     public function index()
     {
         $usuarios = User::orderBy('nombre', 'asc')->get();
-        $reportes = Reporte::orderBy('fecha_sistema','desc')->get();
+        $reportes = Reporte::orderBy('fecha_sistema', 'desc')->get();
+
         return view('dashboard.administrador', compact('usuarios', 'reportes'));
     }
 
@@ -30,6 +30,7 @@ class ReporteAdminController extends Controller
     {
         $reporte = Reporte::with(['archivos', 'administradorAprobador', 'respuestasAsociados'])->findOrFail($id);
         $areas = AreaInteres::all();
+
         return view('dashboard.admin.reportes.show', compact('reporte', 'areas'));
     }
 
@@ -37,6 +38,7 @@ class ReporteAdminController extends Controller
     public function edit($id)
     {
         $reporte = Reporte::with('archivos')->findOrFail($id);
+
         return view('dashboard.admin.reportes.edit', compact('reporte'));
     }
 
@@ -44,72 +46,72 @@ class ReporteAdminController extends Controller
     public function update(Request $request, $id)
     {
         $reporte = Reporte::findOrFail($id);
-        
+
         \DB::beginTransaction();
         try {
             // Preparar datos para actualizar
             $datosActualizar = $request->except(['archivos_eliminar', 'nuevas_imagenes', 'nuevos_enlaces']);
-            
+
             // Actualizar el id_administrador_aprobador con el usuario actual
             $datosActualizar['id_administrador_aprobador'] = auth()->id();
-            
+
             // Actualizar datos del reporte
             $reporte->update($datosActualizar);
-            
+
             // Eliminar archivos marcados para eliminación
-            if ($request->has('archivos_eliminar') && !empty($request->archivos_eliminar)) {
+            if ($request->has('archivos_eliminar') && ! empty($request->archivos_eliminar)) {
                 $archivosEliminar = explode(',', $request->archivos_eliminar);
-                
+
                 foreach ($archivosEliminar as $archivoId) {
                     $archivo = \App\Models\Archivo::find($archivoId);
                     if ($archivo) {
                         // Eliminar archivo físico si es una imagen
-                        if ($archivo->tipo === 'imagen' && Storage::exists('archivos/' . $archivo->nombre_archivo)) {
-                            Storage::delete('archivos/' . $archivo->nombre_archivo);
+                        if ($archivo->tipo === 'imagen' && Storage::exists('archivos/'.$archivo->nombre_archivo)) {
+                            Storage::delete('archivos/'.$archivo->nombre_archivo);
                         }
                         $archivo->delete();
                     }
                 }
             }
-            
+
             // Añadir nuevas imágenes
             if ($request->hasFile('nuevas_imagenes')) {
                 foreach ($request->file('nuevas_imagenes') as $imagen) {
                     if ($imagen->isValid()) {
-                        $nombreArchivo = time() . '_' . $imagen->getClientOriginalName();
+                        $nombreArchivo = time().'_'.$imagen->getClientOriginalName();
                         $imagen->storeAs('archivos', $nombreArchivo);
-                        
+
                         \App\Models\Archivo::create([
                             'id_reporte' => $reporte->id_reporte,
                             'nombre_archivo' => $nombreArchivo,
-                            'tipo' => 'imagen'
+                            'tipo' => 'imagen',
                         ]);
                     }
                 }
             }
-            
+
             // Añadir nuevos enlaces
             if ($request->has('nuevos_enlaces')) {
                 foreach ($request->nuevos_enlaces as $enlace) {
-                    if (!empty($enlace)) {
+                    if (! empty($enlace)) {
                         \App\Models\Archivo::create([
                             'id_reporte' => $reporte->id_reporte,
                             'url' => $enlace,
-                            'tipo' => 'enlace'
+                            'tipo' => 'enlace',
                         ]);
                     }
                 }
             }
-            
+
             \DB::commit();
-            
+
             return redirect()->route('admin.reportes.index')->with('success', 'Reporte actualizado correctamente');
-            
+
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error('Error al actualizar reporte: ' . $e->getMessage());
-            
-            return back()->with('error', 'Error al actualizar el reporte: ' . $e->getMessage())->withInput();
+            \Log::error('Error al actualizar reporte: '.$e->getMessage());
+
+            return back()->with('error', 'Error al actualizar el reporte: '.$e->getMessage())->withInput();
         }
     }
 
@@ -118,7 +120,7 @@ class ReporteAdminController extends Controller
     {
         $reporte = Reporte::findOrFail($id);
         \App\Models\Notificacion::where('id_reporte', $id)->delete();
-        
+
         // Actualizar estado
         $reporte->estado = 'aprobado';
         $reporte->fecha_aprobacion = now();
@@ -128,13 +130,13 @@ class ReporteAdminController extends Controller
         // Obtener usuarios seleccionados
         $usuariosSeleccionados = json_decode($request->input('usuarios_seleccionados', '[]'), true);
         $idArea = $request->input('id_area_interes');
-        
+
         \Log::info('🔎 Usuarios seleccionados:', [
             'id_area_interes' => $idArea,
             'usuarios_seleccionados' => $usuariosSeleccionados,
-            'count' => count($usuariosSeleccionados)
+            'count' => count($usuariosSeleccionados),
         ]);
-        
+
         // Buscar usuarios según selección
         if ($idArea == 'todos') {
             $usuarios = \App\Models\User::whereIn('id_usuario', $usuariosSeleccionados)
@@ -144,9 +146,9 @@ class ReporteAdminController extends Controller
             $usuarios = \App\Models\User::whereIn('id_usuario', $usuariosSeleccionados)
                 ->get();
         }
-        
+
         \Log::info('👥 Usuarios a notificar:', $usuarios->pluck('id_usuario')->toArray());
-        
+
         // ... el resto del método permanece igual (asociar usuarios y enviar notificaciones) ...
         foreach ($usuarios as $user) {
             if ($user) {
@@ -154,12 +156,12 @@ class ReporteAdminController extends Controller
                 $asignacionExistente = \App\Models\ReporteAsociado::where('id_reporte', $reporte->id_reporte)
                     ->where('id_usuario', $user->id_usuario)
                     ->first();
-                
-                if (!$asignacionExistente) {
+
+                if (! $asignacionExistente) {
                     \App\Models\ReporteAsociado::create([
                         'id_reporte' => $reporte->id_reporte,
                         'id_usuario' => $user->id_usuario,
-                        'fecha_asignacion' => now()
+                        'fecha_asignacion' => now(),
                     ]);
                     \Log::info("✅ Usuario asociado al reporte: {$user->id_usuario}");
                 } else {
@@ -171,10 +173,11 @@ class ReporteAdminController extends Controller
         $sid = env('TWILIO_SID');
         $token = env('TWILIO_TOKEN');
         $fromSms = env('TWILIO_FROM');
-        
+
         // Verificar credenciales
         if (empty($sid) || empty($token) || empty($fromSms)) {
             \Log::error('❌ Credenciales de Twilio no configuradas');
+
             return redirect()->route('dashboard.administrador')
                 ->with('error', 'Configuración de Twilio incompleta. Notificaciones no enviadas.');
         }
@@ -187,17 +190,17 @@ class ReporteAdminController extends Controller
             foreach ($usuarios as $usuario) {
                 // ✅ Manejar tanto colección de DetalleInteres como de User directamente
                 $user = ($usuario instanceof \App\Models\DetalleInteres) ? $usuario->usuario : $usuario;
-                
+
                 if ($user && $user->telefono) {
                     // Formatear número
                     $to = $user->telefono;
-                    if (!str_starts_with($to, '+')) {
-                        $to = '+51' . ltrim($to, '0');
+                    if (! str_starts_with($to, '+')) {
+                        $to = '+51'.ltrim($to, '0');
                     }
 
                     \Log::info("📱 Intentando enviar SMS a: {$to}");
 
-                    $mensajeSMS = "Reporte #{$reporte->id_reporte} revisado. Ver: " . config('app.url');
+                    $mensajeSMS = "Reporte #{$reporte->id_reporte} revisado. Ver: ".config('app.url');
 
                     try {
                         // Enviar SMS
@@ -205,7 +208,7 @@ class ReporteAdminController extends Controller
                             'from' => $fromSms,
                             'body' => $mensajeSMS,
                         ]);
-                        
+
                         \Log::info("✅ SMS enviado correctamente a: {$to}");
                         $smsEnviados++;
 
@@ -218,11 +221,11 @@ class ReporteAdminController extends Controller
                             'fecha_envio' => now(),
                             'estado' => 'enviado',
                             'intentos' => 1,
-                            'error_mensaje' => null
+                            'error_mensaje' => null,
                         ]);
 
                     } catch (\Exception $e) {
-                        \Log::error("❌ Error enviando SMS a {$to}: " . $e->getMessage());
+                        \Log::error("❌ Error enviando SMS a {$to}: ".$e->getMessage());
                         $erroresSms++;
 
                         \App\Models\Notificacion::create([
@@ -231,9 +234,9 @@ class ReporteAdminController extends Controller
                             'tipo' => 'sms',
                             'contenido' => $mensajeSMS,
                             'fecha_envio' => now(),
-                            'estado' => 'error',
+                            'estado' => 'fallido',
                             'intentos' => 1,
-                            'error_mensaje' => $e->getMessage()
+                            'error_mensaje' => $e->getMessage(),
                         ]);
                     }
 
@@ -244,7 +247,7 @@ class ReporteAdminController extends Controller
                                 ->send(new ReporteAprobadoMail($reporte));
                             \Log::info("✅ Email enviado a: {$user->email}");
                         } catch (\Exception $e) {
-                            \Log::error("❌ Error enviando email a {$user->email}: " . $e->getMessage());
+                            \Log::error("❌ Error enviando email a {$user->email}: ".$e->getMessage());
                         }
                     }
                 }
@@ -255,24 +258,27 @@ class ReporteAdminController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => "Reporte aprobado. {$smsEnviados} SMS enviados, {$erroresSms} errores."
+                    'message' => "Reporte aprobado. {$smsEnviados} SMS enviados, {$erroresSms} errores.",
                 ]);
             }
+
             return redirect()->route('dashboard.administrador')
-            ->with('success', "Reporte aprobado. {$smsEnviados} SMS enviados, {$erroresSms} errores.");
+                ->with('success', "Reporte aprobado. {$smsEnviados} SMS enviados, {$erroresSms} errores.");
 
         } catch (\Exception $e) {
-            \Log::error('❌ Error general: ' . $e->getMessage());
-             if ($request->ajax()) {
+            \Log::error('❌ Error general: '.$e->getMessage());
+            if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Error al aprobar el reporte: ' . $e->getMessage()
+                    'message' => 'Error al aprobar el reporte: '.$e->getMessage(),
                 ], 500);
             }
+
             return redirect()->route('dashboard.administrador')
-                ->with('error', 'Reporte aprobado, pero hubo problemas: ' . $e->getMessage());
+                ->with('error', 'Reporte aprobado, pero hubo problemas: '.$e->getMessage());
         }
     }
+
     // Rechazar
     public function rechazar(Request $request, $id)
     {
@@ -283,9 +289,10 @@ class ReporteAdminController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Reporte rechazado correctamente'
+                'message' => 'Reporte rechazado correctamente',
             ]);
         }
+
         return back()->with('error', 'Reporte rechazado');
     }
 
@@ -304,7 +311,7 @@ class ReporteAdminController extends Controller
             \App\Models\ReporteAsociado::where('id_reporte', $id)->delete();
             \App\Models\EdicionReporte::where('id_reporte', $id)->delete();
             \App\Models\RespuestaAsociado::where('id_reporte', $id)->delete();
-            
+
             // Finalmente eliminar el reporte
             $reporte->delete();
 
@@ -315,10 +322,10 @@ class ReporteAdminController extends Controller
 
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error('Error al eliminar reporte: ' . $e->getMessage());
-            
+            \Log::error('Error al eliminar reporte: '.$e->getMessage());
+
             return redirect()->route('admin.reportes.index')
-                ->with('error', 'Error al eliminar el reporte: ' . $e->getMessage());
+                ->with('error', 'Error al eliminar el reporte: '.$e->getMessage());
         }
     }
 
@@ -328,6 +335,7 @@ class ReporteAdminController extends Controller
         $reporte = Reporte::with('archivos')->findOrFail($id);
 
         $pdf = Pdf::loadView('dashboard.admin.reportes.pdf', compact('reporte'));
+
         return $pdf->download("reporte_{$reporte->id_reporte}.pdf");
     }
 }
