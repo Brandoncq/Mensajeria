@@ -284,7 +284,6 @@
                 <label for="area_interes" class="block text-sm font-medium text-gray-700">Área de Interés</label>
                 <select name="id_area_interes" id="area_interes" required onchange="cargarUsuariosPorArea(this.value)"
                     class="mt-1 p-2 block w-full border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500 sm:text-sm">
-                        <option value="todos">Todos los asociados</option>
                     @foreach($areas as $area)
                         <option value="{{ $area->id_area_interes }}">{{ $area->nombre }}</option>
                     @endforeach
